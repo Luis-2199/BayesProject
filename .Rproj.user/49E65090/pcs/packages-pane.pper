@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "C:/Users/luise/OneDrive/Documentos/R/win-library/3.6",
+        "installDependencies": true
+    }
+}
