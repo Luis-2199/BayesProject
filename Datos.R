@@ -1,5 +1,5 @@
 library(tidyverse)
-
+setwd("C:/Users/edson/Documents/BayesProject")
 Data_raw_Sec3 <- read_csv("Sec3.csv"#, col_types = list(col_character(), col_factor(), col_integer(),
                                                        #  col_integer(), col_integer(), col_character(),
                                                         # col_integer(), col_character(), col_integer(),
@@ -26,8 +26,8 @@ Data <- inner_join(Data_raw_Sec3, Data_raw_Sec45) %>%
 Data_CDMX <- Data %>% 
   filter(Nom_Ent == "Ciudad de Mexico") %>%
   mutate(Sit_Lab_Act =AP3_8, Pos_OCup =replace_na( AP3_10, 0), Imp_Seg = AP4_2_05, Seg_Loc=AP4_3_1, Seg_Mun =AP4_3_2, Alum =AP4_8_1,
-         Agua=AP4_8_2,Pandill=AP4_8_4,Robos=AP4_8_5,Del_Esc=AP4_8_6,Mas_Op_Del=AP4_5_08,Mas_Pat_Vil=AP4_5_10, Vehic=AP6_1_1) %>%
-  select(-AP3_8,-AP3_10,-AP4_2_05,-AP4_3_1,-AP4_3_2,-AP4_8_1,-AP4_8_2,-AP4_8_4,-AP4_8_5,-AP4_8_6,-AP4_5_08,-AP4_5_10,-AP6_1_1)
+         Agua=AP4_8_2,Pandill=AP4_8_4,Robos=AP4_8_5,Del_Esc=AP4_8_6,Mas_Op_Del=AP5_1_08,Mas_Pat_Vil=AP5_1_10, Vehic=AP6_1_1) %>%
+  select(-AP3_8,-AP3_10,-AP4_2_05,-AP4_3_1,-AP4_3_2,-AP4_8_1,-AP4_8_2,-AP4_8_4,-AP4_8_5,-AP4_8_6,-AP5_1_08,-AP5_1_10,-AP6_1_1)
 
 
 #Data_per_est <- Data_CDMX %>% 
