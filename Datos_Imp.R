@@ -32,7 +32,9 @@ for(i in 1:nrow(Data_CDMX)){
   }
 }
 
-Data_CDMX <- Data_CDMX %>% select(-Nom_Ent,-Vic_Sex)
+Data_CDMX <- Data_CDMX %>%
+  filter(Edad !=98) %>%
+  select(-Nom_Ent,-Vic_Sex)
 
 Data_CDMX2 <- Data_CDMX
 
@@ -54,11 +56,6 @@ Data_CDMX2$Mas_Pat_Vil <- as_factor(Data_CDMX2$Mas_Pat_Vil)
 Data_CDMX2$Vehic <- as_factor(Data_CDMX2$Vehic)
 
 sum_ini <- summary(Data_CDMX2)
-
-
-
-
-
 
 
 colnames(Data_CDMX)
@@ -295,12 +292,6 @@ au <- hetcor(CData_CDMX2)
 au2 <- au$correlations
 corrplot(au2)
 
-# Lo que hizo Pime
-  Data_CDMX.9 <- Data_CDMX %>% filter(Data_CDMX$Nom_Mun != 9, Data_CDMX$Sexo != 9,Data_CDMX$Niv_Edu != 9,Data_CDMX$Imp_Seg != 9,Data_CDMX$Seg_Loc!= 9,
-                                      Data_CDMX$Seg_Mun!= 9,Data_CDMX$Alum!= 9,Data_CDMX$Agua!= 9,Data_CDMX$Pandill!= 9,Data_CDMX$Robos!= 9,Data_CDMX$Del_Esc!= 9,
-                                      Data_CDMX$Mas_Op_Del!= 9, Data_CDMX$Mas_Pat_Vil!= 9, Data_CDMX$Vehic!= 9)
-  
-  
   
   # Modelo Edson
   

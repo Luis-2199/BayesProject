@@ -23,7 +23,8 @@ graf <- ggplot(data = CData_CDMX, aes(x=Edad, y=Vic_Rob_As))+
   theme_light()
 
 
-m1<-zeroinfl(Vic_Rob_As ~ Sexo + Edad + Niv_Edu + Nom_Mun + Sit_Lab_Act + Imp_Seg + Seg_Mun + Mas_Pat_Vil + Vehic,data=CData_CDMX1,dist="poisson",link="logit")
+m1<-zeroinfl(Vic_Rob_As ~ Sexo + Edad + Niv_Edu + Nom_Mun + Sit_Lab_Act + Imp_Seg + Seg_Mun + Mas_Pat_Vil + Vehic,
+              data=CData_CDMX1,dist="poisson",link="logit")
 sglm1<-summary(m1)
 b0_1 <- sglm$coefficients[[1]][1,1]
 b1_1 <- sglm$coefficients[[1]][2,1]
@@ -65,6 +66,9 @@ CData_CDMX2 <- CData_CDMX1 %>%
   mutate(Region =Region, Nivel_Edu=Nivel_Edu)
 CData_CDMX2$Region <- as_factor(CData_CDMX2$Region)
 CData_CDMX2$Nivel_Edu <- factor(CData_CDMX2$Nivel_Edu,levels=c("Ninguno","Prepri/Prim","Secundaria","Medio Superior","Superior","Posgrado"),ordered = T)
+
+####Guardamos bases de datos
+save(CData_CDMX2,file="BD_CDMX2_Imp.Rda")
 
 r <- xtabs(~Edad + Sit_Lab_Act, data=CData_CDMX2)
 chisq.test(r)
