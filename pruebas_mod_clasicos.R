@@ -10,6 +10,8 @@ mod1 <- zeroinfl(Vic_Rob_As ~ Region + Edad + Sit_Lab_Act + Nivel_Edu +
                    Imp_Seg + Seg_Mun + Mas_Pat_Vil + Vehic,
                  data= CData_CDMX2, dist="poisson",link="logit")
 summary(mod1)
+
+
 # LogLikelihood -3279.309
 
 # R2 no se calcula para glms
@@ -32,7 +34,7 @@ mod2 <- zeroinfl(Vic_Rob_As ~ Region + Edad + Sit_Lab_Act +
 summary(mod2)
 # LogLikelihood -3287.651
 
-
+cv.glm(CData_CDMX2, mod2, K = 4)$delta
 
 ###### Hay que cargar CData_CDMX3
 #### Modelo3: 

@@ -5,6 +5,7 @@ library(glm2)
 library(pscl)
 library(boot)
 
+
 CData_CDMX1 <- CData_CDMX %>% 
   select(-Pos_OCup,-Seg_Loc,-Alum,-Agua,-Pandill,-Robos,-Del_Esc,-Mas_Op_Del)
 
