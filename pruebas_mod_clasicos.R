@@ -28,7 +28,7 @@ summary(mod1)
 #               Imp_Seg + Seg_Mun + Mas_Pat_Vil + Vehic
 mod2 <- zeroinfl(Vic_Rob_As ~ Region + Edad + Sit_Lab_Act +
            Imp_Seg + Seg_Mun + Mas_Pat_Vil + Vehic,
-         data=training,dist="poisson",link="logit")
+         data=CData_CDMX2,dist="poisson",link="logit")
 summary(mod2)
 # LogLikelihood -3287.651
 
