@@ -32,8 +32,8 @@ for(i in 1:nrow(Data_CDMX)){
   }
 }
 
-Data_CDMX <- Data_CDMX %>%
-  filter(Edad !=98) %>%
+Data_CDMX <- Data_CDMX %>% 
+  filter(Edad!=98) %>% 
   select(-Nom_Ent,-Vic_Sex)
 
 Data_CDMX2 <- Data_CDMX
@@ -58,6 +58,11 @@ Data_CDMX2$Vehic <- as_factor(Data_CDMX2$Vehic)
 sum_ini <- summary(Data_CDMX2)
 
 
+
+
+
+
+
 colnames(Data_CDMX)
 
 levels(Data_CDMX$Imp_Seg) #"0" "1"
@@ -78,96 +83,96 @@ d2 <- Data_CDMX %>% filter(Vic_Rob_As == 0)
 
 #d1
 {
-  sum(d1$Seg_Loc==1) #263
-  sum(d1$Seg_Loc==2) #823/1086
+  sum(d1$Seg_Loc==1) #262
+  sum(d1$Seg_Loc==2) #815/1077
   
   sum(d1$Seg_Mun==1) #142
-  sum(d1$Seg_Mun==2) #946/1088
+  sum(d1$Seg_Mun==2) #937/1079
   
-  sum(d1$Alum==1) #643
-  sum(d1$Alum==2) #448/1091
+  sum(d1$Alum==1) #635
+  sum(d1$Alum==2) #447/1082
   
-  sum(d1$Agua==1) #582
-  sum(d1$Agua==2) #509/1091
+  sum(d1$Agua==1) #576
+  sum(d1$Agua==2) #506/1082
   
-  sum(d1$Pandill==1) #473
-  sum(d1$Pandill==2) #599/1072
+  sum(d1$Pandill==1) #468
+  sum(d1$Pandill==2) #595/1063
   
-  sum(d1$Robos==1) #946
-  sum(d1$Robos==2) #142/1088
+  sum(d1$Robos==1) #937
+  sum(d1$Robos==2) #142/1079
   
-  sum(d1$Del_Esc==1) #543
-  sum(d1$Del_Esc==2) #352/895
+  sum(d1$Del_Esc==1) #537
+  sum(d1$Del_Esc==2) #351/888
   
-  sum(d1$Mas_Op_Del==1) #302
-  sum(d1$Mas_Op_Del==2) #509/811
+  sum(d1$Mas_Op_Del==1) #301
+  sum(d1$Mas_Op_Del==2) #504/805
   
-  sum(d1$Mas_Pat_Vil==1) #367
-  sum(d1$Mas_Pat_Vil==2) #523/890
+  sum(d1$Mas_Pat_Vil==1) #365
+  sum(d1$Mas_Pat_Vil==2) #518/883
   
-  sum(d1$Vehic==1) #426
-  sum(d1$Vehic==2) #664/1090
+  sum(d1$Vehic==1) #425
+  sum(d1$Vehic==2) #656/1081
 }
 
 #d2
 {
-  sum(d2$Seg_Loc==1) #1536
-  sum(d2$Seg_Loc==2) #2849/4385
+  sum(d2$Seg_Loc==1) #1517
+  sum(d2$Seg_Loc==2) #2802/4319
   
-  sum(d2$Seg_Mun==1) #930
-  sum(d2$Seg_Mun==2) #3447/4377
+  sum(d2$Seg_Mun==1) #923
+  sum(d2$Seg_Mun==2) #3387/4310
   
-  sum(d2$Alum==1) #2172
-  sum(d2$Alum==2) #2221/4393
+  sum(d2$Alum==1) #2135
+  sum(d2$Alum==2) #2190/4325
   
-  sum(d2$Agua==1) #2053
-  sum(d2$Agua==2) #2344/4397
+  sum(d2$Agua==1) #2030
+  sum(d2$Agua==2) #2299/4329
   
-  sum(d2$Pandill==1) #1355
-  sum(d2$Pandill==2) #2988/4343
+  sum(d2$Pandill==1) #1337
+  sum(d2$Pandill==2) #2943/4280
   
-  sum(d2$Robos==1) #3280
-  sum(d2$Robos==2) #10812/14092
+  sum(d2$Robos==1) #3228
+  sum(d2$Robos==2) #1068/4296
   
-  sum(d2$Del_Esc==1) #1555
-  sum(d2$Del_Esc==2) #1978/3533
+  sum(d2$Del_Esc==1) #1540
+  sum(d2$Del_Esc==2) #1941/3481
   
   sum(d2$Mas_Op_Del==1) #998
-  sum(d2$Mas_Op_Del==2) #2268/3266
+  sum(d2$Mas_Op_Del==2) #2226/3214
   
-  sum(d2$Mas_Pat_Vil==1) #1753
-  sum(d2$Mas_Pat_Vil==2) #1962/3715
+  sum(d2$Mas_Pat_Vil==1) #1723
+  sum(d2$Mas_Pat_Vil==2) #1934/3657
   
-  sum(d2$Vehic==1) #1857
-  sum(d2$Vehic==2) #2537/4394
+  sum(d2$Vehic==1) #1833
+  sum(d2$Vehic==2) #2496/4329
 }
 
 
 set.seed(3)
 for(i in 1:nrow(d1)){
-  d1$Seg_Loc[i] <- ifelse(d1$Seg_Loc[i]==9,rbernoulli(1,823/1086)+1,d1$Seg_Loc[i])
-  d1$Seg_Mun[i] <- ifelse(d1$Seg_Mun[i]==9,rbernoulli(1,946/1088)+1, d1$Seg_Mun[i])
-  d1$Alum[i] <- ifelse(d1$Alum[i]==9,rbernoulli(1,448/1091)+1,d1$Alum[i])
-  d1$Agua[i] <- ifelse(d1$Agua[i]==9,rbernoulli(1,509/1091)+1,d1$Agua[i])
-  d1$Pandill[i] <- ifelse(d1$Pandill[i]==9,rbernoulli(1,599/1072)+1,d1$Pandill[i])
-  d1$Robos[i] <- ifelse(d1$Robos[i]==9,rbernoulli(1,142/1088)+1,d1$Robos[i])
-  d1$Del_Esc[i] <- ifelse(d1$Del_Esc[i]==9,rbernoulli(1,352/895)+1,d1$Del_Esc[i])
-  d1$Mas_Op_Del[i] <- ifelse(d1$Mas_Op_Del[i]==9,rbernoulli(1,509/811)+1,d1$Mas_Op_Del[i])
-  d1$Mas_Pat_Vil[i] <- ifelse(d1$Mas_Pat_Vil[i]==9,rbernoulli(1,523/890)+1,d1$Mas_Pat_Vil[i])
-  d1$Vehic[i] <- ifelse(d1$Vehic[i]==9,rbernoulli(1,664/1090)+1,d1$Vehic[i])
+  d1$Seg_Loc[i] <- ifelse(d1$Seg_Loc[i]==9,rbernoulli(1,815/1077)+1,d1$Seg_Loc[i])
+  d1$Seg_Mun[i] <- ifelse(d1$Seg_Mun[i]==9,rbernoulli(1,937/1079)+1, d1$Seg_Mun[i])
+  d1$Alum[i] <- ifelse(d1$Alum[i]==9,rbernoulli(1,447/1082)+1,d1$Alum[i])
+  d1$Agua[i] <- ifelse(d1$Agua[i]==9,rbernoulli(1,506/1082)+1,d1$Agua[i])
+  d1$Pandill[i] <- ifelse(d1$Pandill[i]==9,rbernoulli(1,595/1063)+1,d1$Pandill[i])
+  d1$Robos[i] <- ifelse(d1$Robos[i]==9,rbernoulli(1,142/1079)+1,d1$Robos[i])
+  d1$Del_Esc[i] <- ifelse(d1$Del_Esc[i]==9,rbernoulli(1,351/888)+1,d1$Del_Esc[i])
+  d1$Mas_Op_Del[i] <- ifelse(d1$Mas_Op_Del[i]==9,rbernoulli(1,504/805)+1,d1$Mas_Op_Del[i])
+  d1$Mas_Pat_Vil[i] <- ifelse(d1$Mas_Pat_Vil[i]==9,rbernoulli(1,518/883)+1,d1$Mas_Pat_Vil[i])
+  d1$Vehic[i] <- ifelse(d1$Vehic[i]==9,rbernoulli(1,656/1081)+1,d1$Vehic[i])
 }
 
 for (i in 1:nrow(d2)){
-  d2$Seg_Loc[i] <- ifelse(d2$Seg_Loc[i]==9,rbernoulli(1,2849/4385)+1,d2$Seg_Loc[i])
-  d2$Seg_Mun[i] <- ifelse(d2$Seg_Mun[i]==9,rbernoulli(1,3447/4377)+1,d2$Seg_Mun[i])
-  d2$Alum[i] <- ifelse(d2$Alum[i]==9,rbernoulli(1,2221/4393)+1,d2$Alum[i])
-  d2$Agua[i] <- ifelse(d2$Agua[i]==9,rbernoulli(1,2344/4397)+1,d2$Agua[i])
-  d2$Pandill[i] <- ifelse(d2$Pandill[i]==9,rbernoulli(1,2988/4343)+1,d2$Pandill[i])
-  d2$Robos[i] <- ifelse(d2$Robos[i]==9,rbernoulli(1,10812/14092)+1,d2$Robos[i])
-  d2$Del_Esc[i] <- ifelse(d2$Del_Esc[i]==9,rbernoulli(1,1978/3533)+1,d2$Del_Esc[i])
-  d2$Mas_Op_Del[i] <- ifelse(d2$Mas_Op_Del[i]==9,rbernoulli(1,2268/3266)+1,d2$Mas_Op_Del[i])
-  d2$Mas_Pat_Vil[i] <- ifelse(d2$Mas_Pat_Vil[i]==9,rbernoulli(1,1962/3715)+1,d2$Mas_Pat_Vil[i])
-  d2$Vehic[i] <- ifelse(d2$Vehic[i]==9,rbernoulli(1,2537/4394)+1,d2$Vehic[i])
+  d2$Seg_Loc[i] <- ifelse(d2$Seg_Loc[i]==9,rbernoulli(1,2802/4319)+1,d2$Seg_Loc[i])
+  d2$Seg_Mun[i] <- ifelse(d2$Seg_Mun[i]==9,rbernoulli(1,3387/4310)+1,d2$Seg_Mun[i])
+  d2$Alum[i] <- ifelse(d2$Alum[i]==9,rbernoulli(1,2190/4325)+1,d2$Alum[i])
+  d2$Agua[i] <- ifelse(d2$Agua[i]==9,rbernoulli(1,2299/4329)+1,d2$Agua[i])
+  d2$Pandill[i] <- ifelse(d2$Pandill[i]==9,rbernoulli(1,2943/4280)+1,d2$Pandill[i])
+  d2$Robos[i] <- ifelse(d2$Robos[i]==9,rbernoulli(1,1068/4296)+1,d2$Robos[i])
+  d2$Del_Esc[i] <- ifelse(d2$Del_Esc[i]==9,rbernoulli(1,1941/3481)+1,d2$Del_Esc[i])
+  d2$Mas_Op_Del[i] <- ifelse(d2$Mas_Op_Del[i]==9,rbernoulli(1,2226/3214)+1,d2$Mas_Op_Del[i])
+  d2$Mas_Pat_Vil[i] <- ifelse(d2$Mas_Pat_Vil[i]==9,rbernoulli(1,1934/3657)+1,d2$Mas_Pat_Vil[i])
+  d2$Vehic[i] <- ifelse(d2$Vehic[i]==9,rbernoulli(1,2496/4329)+1,d2$Vehic[i])
 }
 
 CData_CDMX <- rbind(d1,d2)
@@ -292,6 +297,12 @@ au <- hetcor(CData_CDMX2)
 au2 <- au$correlations
 corrplot(au2)
 
+# Lo que hizo Pime
+  Data_CDMX.9 <- Data_CDMX %>% filter(Data_CDMX$Nom_Mun != 9, Data_CDMX$Sexo != 9,Data_CDMX$Niv_Edu != 9,Data_CDMX$Imp_Seg != 9,Data_CDMX$Seg_Loc!= 9,
+                                      Data_CDMX$Seg_Mun!= 9,Data_CDMX$Alum!= 9,Data_CDMX$Agua!= 9,Data_CDMX$Pandill!= 9,Data_CDMX$Robos!= 9,Data_CDMX$Del_Esc!= 9,
+                                      Data_CDMX$Mas_Op_Del!= 9, Data_CDMX$Mas_Pat_Vil!= 9, Data_CDMX$Vehic!= 9)
+  
+  
   
   # Modelo Edson
   
