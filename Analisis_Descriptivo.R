@@ -1,6 +1,45 @@
 #Analisis Descriptivo
-
+library(tidyverse)
 library(ggplot2)
+
+
+
+
+#Descriptivo Liz 
+
+#Tablas de contingencia
+# Impresión Seguridad 
+xtabs(~ Vic_Rob_As+ Imp_Seg, data = CData_CDMX2)
+# Segurdad Municipal
+xtabs(~ Vic_Rob_As + Seg_Mun , data = CData_CDMX2)
+# Mas Patrullas Vigilando
+xtabs(~ Vic_Rob_As + Mas_Pat_Vil , data = CData_CDMX2)
+# Region
+xtabs(~ Vic_Rob_As + Region , data = CData_CDMX2)
+# Nivel Educativo
+xtabs(~ Vic_Rob_As + Nivel_Edu , data = CData_CDMX2)
+# Sit_Lab 
+xtabs(~ Vic_Rob_As + Sit_Lab , data = CData_CDMX2)
+
+# Tablas con gráfica
+as_tibble(xtabs(~ Vic_Rob_As+ Imp_Seg, data = CData_CDMX2)) %>% ggplot() + geom_bar(aes(x=Vic_Rob_As, y = n), stat = "identity")
+
+
+# Boxplot (Edad)
+
+ggplot(CData_CDMX2, aes(x = Vic_Rob_As , y = Edad)) +
+geom_boxplot()
+
+
+
+
+
+
+
+
+
+
+
 
 Datos_Tasas <- CData_CDMX2 %>% group_by(Region) %>% 
   summarise(TotalDelitos = sum(Vic_Rob_As))
@@ -26,6 +65,8 @@ Datos_Tasas %>%
   labs(x = NULL, y = NULL, fill = NULL) +
 # theme(axis.text.x = element_text(size = 7, angle = 45))
   scale_fill_brewer(palette = "Blues") 
+
+
 
 # Gráfica por Sexo
 CData_CDMX1 %>% group_by(Sexo) %>% summarise(TotalDelitos = sum(Vic_Rob_As))%>%
@@ -86,10 +127,6 @@ CData_CDMX %>%
   ggplot() +
   geom_bar(aes(x = Vic_Rob_As))
 
-#Barplot sexo
-CData_CDMX %>%
-  ggplot() +
-  geom_bar(aes(x = Sexo, y = ))
 
 
 
@@ -97,37 +134,29 @@ CData_CDMX %>%
 
 
 
-ggplot(CData_CDMX) + geom_bar(aes(x= Edad, y = Vic_Rob_As), stat = "identity")
-ggplot(CData_CDMX) + geom_bar(aes(x= Edad, y = Vic_Rob_As), stat = "identity")
-
-
-ggplot(CData_CDMX) + geom_bar(aes(x = Vic_Rob_As, y = TotalDelitos))
-
-ggplot(CData_CDMX %>% filter(Nom_Mun == "Azcapotzalco")) + geom_bar(aes(x = Vic_Rob_As))
-
-ggplot(CData_CDMX %>% filter(Nom_Mun =="Coyoacan")) + geom_bar(aes(x = Vic_Rob_As))
-
-
-ggplot(CData_CDMX) + geom_bar(aes(x = Sit_Lab_Act))
-
-ggplot(CData_CDMX) + geom_bar(aes(x = Pos_OCup))
-
-ggplot(CData_CDMX) + geom_bar(aes(x = Imp_Seg))
-
-ggplot(CData_CDMX) + geom_bar(aes(x = ))
 
 
 
 
-library(maps)
+# ggplot(CData_CDMX) + geom_bar(aes(x= Edad, y = Vic_Rob_As), stat = "identity")
+# ggplot(CData_CDMX) + geom_bar(aes(x= Edad, y = Vic_Rob_As), stat = "identity")
+# 
+# 
+# ggplot(CData_CDMX) + geom_bar(aes(x = Vic_Rob_As, y = TotalDelitos))
+# 
+# ggplot(CData_CDMX %>% filter(Nom_Mun == "Azcapotzalco")) + geom_bar(aes(x = Vic_Rob_As))
+# 
+# ggplot(CData_CDMX %>% filter(Nom_Mun =="Coyoacan")) + geom_bar(aes(x = Vic_Rob_As))
+# 
+# 
+# ggplot(CData_CDMX) + geom_bar(aes(x = Sit_Lab_Act))
+# 
+# ggplot(CData_CDMX) + geom_bar(aes(x = Pos_OCup))
+# 
+# ggplot(CData_CDMX) + geom_bar(aes(x = Imp_Seg))
+# 
+# ggplot(CData_CDMX) + geom_bar(aes(x = ))
 
-mi_counties <- map_data("county", "mexico") %>% 
-  select(lon = long, lat, group, id = subregion)
-head(mi_counties)
-#>     lon  lat group     id
-#> 1 -83.9 44.9     1 alcona
-#> 2 -83.4 44.9     1 alcona
-#> 3 -83.4 44.9     1 alcona
-#> 4 -83.3 44.8     1 alcona
-#> 5 -83.3 44.8     1 alcona
-#> 6 -83.3 44.8     1 alcona
+
+
+
