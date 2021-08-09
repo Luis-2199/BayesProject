@@ -5,7 +5,7 @@ library(glm2)
 library(pscl)
 library(boot)
 
-# setwd("C:/Users/edson/Documents/BayesProject")
+setwd("C:/Users/edson/Documents/BayesProject")
 load(file="BD_CDMX_Vic.Rda")
 
 for(i in 1:nrow(Data_CDMX)){
@@ -343,4 +343,72 @@ corrplot(au2)
   sum(D1$Imp_Seg == 1)
   sum(D2$Imp_Seg == 1)
   
-  save(CData_CDMX,file="BD_CDMX_Imp.Rda")
+  
+  
+  CData_CDMX1 <- CData_CDMX %>% 
+    select(-Pos_OCup,-Seg_Loc,-Alum,-Agua,-Pandill,-Robos,-Del_Esc,-Mas_Op_Del)
+  
+  au <- hetcor(CData_CDMX1)
+  au2 <- au$correlations
+  corrplot(au2)
+  
+  # Eliminamos sexo
+  Region <- rep(0,length(CData_CDMX1$Nom_Mun))
+  for(i in 1:length(CData_CDMX1$Nom_Mun)){
+    if(CData_CDMX1$Nom_Mun[i] %in% c("Gustavo A. Madero","Venustiano Carranza","Iztacalco")){
+      Region[i] <- "Norte"
+    }else if(CData_CDMX1$Nom_Mun[i] %in% c("Cuauhtemoc","Miguel Hidalgo","Azcapotzalco","Alvaro Obregon","Cuajimalpa de Morelos")){
+      Region[i] <- "Centro Poniente"
+    }else if(CData_CDMX1$Nom_Mun[i] %in% c("Benito Juarez","Coyoacan","Tlalpan","La Magdalena Contreras")){
+      Region[i] <- "Sur"
+    }else if(CData_CDMX1$Nom_Mun[i] %in% c("Iztapalapa","Tlahuac","Xochimilco","Milpa Alta")){
+      Region[i] <- "Oriente"
+    }
+  }
+
+  
+  
+  Nivel_Edu <- rep("",length(CData_CDMX1$Niv_Edu))
+  for(i in 1:length(CData_CDMX1$Niv_Edu)){
+    if(CData_CDMX1$Niv_Edu[i] %in% c(0,1,2)){
+      Nivel_Edu[i]<-"No Básica"
+    }else if(CData_CDMX1$Niv_Edu[i] %in% c(3,4,5)){
+      Nivel_Edu[i]<-"Secundaria"
+    }else if(CData_CDMX1$Niv_Edu[i] %in% c(6,7)){
+      Nivel_Edu[i]<-"Medio Superior"
+    }else if(CData_CDMX1$Niv_Edu[i] == 8){
+      Nivel_Edu[i]<-"Superior"
+    }else if(CData_CDMX1$Niv_Edu[i] == 9){
+      Nivel_Edu[i]<-"Posgrado"
+    }
+  }
+  
+  Sit_Lab <- rep("",length(CData_CDMX1$Sit_Lab_Act))
+  for(i in 1:length(CData_CDMX1$Sit_Lab_Act)){
+    if(CData_CDMX1$Sit_Lab_Act[i] %in% c(1,2,3)){
+      Sit_Lab[i] <- "Empleado"
+    }else if(CData_CDMX1$Sit_Lab_Act[i] %in% c(4,5)){
+      Sit_Lab[i] <- "Estudiantes y Domésticos"
+    }else if(CData_CDMX1$Sit_Lab_Act[i] %in% c(6,7,8)){
+      Sit_Lab[i] <- "Sin Ocupación"
+    }
+  }
+  
+  CData_CDMX2 <- CData_CDMX1 %>% 
+    select(-Sexo, -Nom_Mun, -Niv_Edu, -Sit_Lab_Act, -Vehic) %>% 
+    mutate(Region =Region, Nivel_Edu=Nivel_Edu, Sit_Lab = Sit_Lab)
+  CData_CDMX2$Region <- as_factor(CData_CDMX2$Region)
+  CData_CDMX2$Nivel_Edu <- factor(CData_CDMX2$Nivel_Edu,levels=c("No Básica","Secundaria","Medio Superior","Superior","Posgrado"),ordered = T)
+  CData_CDMX2$Sit_Lab <- as_factor(CData_CDMX2$Sit_Lab)
+  
+  au <- hetcor(CData_CDMX2)
+  au2 <- au$correlations
+  corrplot(au2)
+  
+  r <- xtabs(~Vic_Rob_As + Region, data=CData_CDMX2)
+  chisq.test(r)
+  
+  
+  ####Guardamos bases de datos
+  save(CData_CDMX2,file="BD_CDMX2.Rda")
+  

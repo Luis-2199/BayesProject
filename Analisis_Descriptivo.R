@@ -2,8 +2,6 @@
 
 library(ggplot2)
 
-load(file = "BD_CDMX2_Imp.Rda")
-
 Datos_Tasas <- CData_CDMX2 %>% group_by(Region) %>% 
   summarise(TotalDelitos = sum(Vic_Rob_As))
 
@@ -36,9 +34,9 @@ CData_CDMX1 %>% group_by(Sexo) %>% summarise(TotalDelitos = sum(Vic_Rob_As))%>%
   coord_polar(theta = "y")
 
 # Gráfica por Situación Laboral
-CData_CDMX2 %>% group_by(Sit_Lab_Act) %>% summarise(TotalDelitos = sum(Vic_Rob_As))%>%
-  ggplot(aes(x = "", y = TotalDelitos, color = Sit_Lab_Act, fill = Sit_Lab_Act)) +
-  geom_bar(stat = "identity", color = "White") +
+CData_CDMX2 %>% group_by(Sit_Lab) %>% summarise(TotalDelitos = sum(Vic_Rob_As))%>%
+  ggplot(aes(x = "", y = TotalDelitos, color = Sit_Lab, fill = Sit_Lab)) +
+  geom_bar(color = "White", stat = "identity") +
   coord_polar(theta = "y")
 
 # Gráfica por Nivel Academico

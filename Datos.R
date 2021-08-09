@@ -1,5 +1,5 @@
 library(tidyverse)
-# setwd("C:/Users/edson/Documents/BayesProject")
+setwd("C:/Users/edson/Documents/BayesProject")
 Data_raw_Sec3 <- read_csv("Sec3.csv"#, col_types = list(col_character(), col_factor(), col_integer(),
                                                        #  col_integer(), col_integer(), col_character(),
                                                         # col_integer(), col_character(), col_integer(),
