@@ -1,5 +1,7 @@
 library(rjags)
 library(tidyverse)
+library(ROCR)
+library(pROC)
 
 CData_CDMX3 <- CData_CDMX2 %>% 
   mutate(Vic_Rob_As = ifelse(Vic_Rob_As>0,1,0))
@@ -24,7 +26,7 @@ summary(modlog1)
 
 vif(modlog1)
 
-r1 <- ifelse(modlog1$fitted.values>=0.5,1,0)
+r1 <- ifelse(modlog3$fitted.values>=0.21,1,0)
 table(r1,CData_CDMX3$Vic_Rob_As)
 
 (4332)/5419
@@ -51,6 +53,10 @@ summary(modlog3)
 
 vec1 <- rbinom(length(modlog3$fitted.values),1,modlog3$fitted.values)
 table(vec1,CData_CDMX3$Vic_Rob_As)
+
+
+
+
 
 ## Jags
 

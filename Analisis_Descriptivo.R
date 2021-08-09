@@ -1,5 +1,5 @@
 #Analisis Descriptivo
-
+library(tidyverse)
 library(ggplot2)
 
 Datos_Tasas <- CData_CDMX2 %>% group_by(Region) %>% 
