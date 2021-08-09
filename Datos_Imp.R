@@ -5,7 +5,7 @@ library(glm2)
 library(pscl)
 library(boot)
 
-setwd("C:/Users/edson/Documents/BayesProject")
+# setwd("C:/Users/edson/Documents/BayesProject")
 load(file="BD_CDMX_Vic.Rda")
 
 for(i in 1:nrow(Data_CDMX)){

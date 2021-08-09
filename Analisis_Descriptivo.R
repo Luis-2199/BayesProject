@@ -2,6 +2,8 @@
 
 library(ggplot2)
 
+load(file = "BD_CDMX2_Imp.Rda")
+
 Datos_Tasas <- CData_CDMX2 %>% group_by(Region) %>% 
   summarise(TotalDelitos = sum(Vic_Rob_As))
 
