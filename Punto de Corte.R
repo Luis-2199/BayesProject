@@ -12,11 +12,9 @@ mtext("Specificity",side=4, padj=-2, col='red')
 abline(h=0.95,lty= 2)
 abline(v=0.14,lty = 2)
 
-perf <- performance(predictions1,measure="tpr",x.measure="fpr")
-x<-perf@x.values[[1]][which.min(cost.perf@y.values[[1]])]
+rest <- abs(unlist(performance(predictions1, "sens")@y.values)-unlist(performance(predictions1, "spec")@y.values))
+opt <- unlist(performance(predictions1, "sens")@x.values)[which(rest==min(rest))]
 
-cost.perf <- performance(pred, measure ="cost")
-opt.cut   <- pred@cutoffs[[1]][which.min(cost.perf@y.values[[1]])]
 
 predictions <- prediction(modlog3$fitted.values,CData_CDMX3$Vic_Rob_As)
 

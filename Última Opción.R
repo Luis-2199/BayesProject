@@ -3,20 +3,19 @@ library(tidyverse)
 library(ROCR)
 library(pROC)
 
+##Creamos base con respuesta 1 y 0
 CData_CDMX3 <- CData_CDMX2 %>% 
   mutate(Vic_Rob_As = ifelse(Vic_Rob_As>0,1,0))
 CData_CDMX3$Vic_Rob_As <- as_factor(CData_CDMX3$Vic_Rob_As)
 
-sum(CData_CDMX2$Vic_Rob_As>0)
-sum(CData_CDMX3$Vic_Rob_As)
-
+## Primer modelo con todas las covariables
 modlog <- glm(Vic_Rob_As ~ .,family = "binomial", data=CData_CDMX3)
 summary(modlog)
 
 library(car)
 vif(modlog)
 
-r <- ifelse(modlog$fitted.values>=0.5,1,0)
+r <- ifelse(modlog$fitted.values>=opt,1,0)
 table(r,CData_CDMX3$Vic_Rob_As)
 
 (4330+1)/5419
