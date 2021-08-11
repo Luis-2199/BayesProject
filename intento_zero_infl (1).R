@@ -7,8 +7,8 @@ library(glm2)
 library(pscl)
 library(boot)
 library(VGAM)
-# library(mpath)  # Para encontrar el mejor modelo
-# library(zic)    # x2
+library(mpath)  # Para encontrar el mejor modelo
+library(zic)    # x2
 
 # NOTA: Cargar CData_CDMX2
 # glimpse(CData_CDMX2)
@@ -48,6 +48,9 @@ mod2 <- zeroinfl(Vic_Rob_As ~ Edad + Seg_Mun + Mas_Pat_Vil
                  + Region + Nivel_Edu + Sit_Lab,
                  data= CData_CDMX2, dist="poisson",link="logit")
 summary(mod2)
+
+predict(mod2, type = "response")
+
 
 # loglik of zero-inflated model -3255.292 
 # BIC of zero-inflated model 6734.123 
@@ -186,8 +189,8 @@ summary(mod_dist_4)
 # 
 # 
 # ########### Modelo completo (de nuevo xdddd) #################
-# m_full <- zeroinfl(Vic_Rob_As ~ .|., data=CData_CDMX2, dist="poisson")
-# summary(m_full)
+m_full <- zeroinfl(Vic_Rob_As ~ .|., data=CData_CDMX2, dist="poisson")
+summary(m_full)
 # 
 # # loglik of zero-inflated model -3253.287
 # # BIC of zero-inflated model 6747.308
@@ -201,9 +204,9 @@ summary(mod_dist_4)
 # 
 # # # NO JALA
 # # # Backward stepwise variable selection with significance level alpha=0.01
-# # fitback <- be.zeroinfl(m_full, data=CData_CDMX2,
-# #                        dist="poisson", alpha=0.05, trace=T)
-# # summary(fitback)
+fitback <- be.zeroinfl(m_full, data=CData_CDMX2,
+                       dist="poisson", alpha=0.05, trace=T)
+summary(fitback)
 # 
 # # TAMPOCO JALA
 # # # Compute LASSO estimates.
