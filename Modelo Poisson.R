@@ -9,6 +9,9 @@ mod<-zeroinfl(Vic_Rob_As ~ Edad,data=CData_CDMX2,dist="poisson",link="logit")
 sglm<-summary(mod)
 sglm
 
+mod1 <- glm(Vic_Rob_As ~ Edad, family = "poisson",data = CData_CDMX2)
+sglm1 <- summary(mod1)
+
 
 #Ejemplo
 b0_1 <- sglm$coefficients[[1]][1,1]
@@ -27,19 +30,30 @@ for(t in 0:9){
   }
 }
 
+b0 <- sglm1$coefficients[1,1]
+b1 <- sglm1$coefficients[2,1]
 
+lam1 <- exp(b0 + b1*42)
+vec1 <- rep(0,10)
+for(t in 0:9){
+  vec1[t+1] <- dpois(t,lam1)
+}
 
 Edad42<-CData_CDMX2 %>%
   filter(Edad == 42)
 
-vec1 <- rep(vec[1:8],775)[1:5419]
+vec_base <- rep(vec[1:8],775)[1:5419]
+vec_base1 <- rep(vec1[1:8],775)[1:5419]
 v<-rep(0:7,775)[1:5419]
 
 
 ggplot(CData_CDMX2) +
   geom_bar(aes(x=Vic_Rob_As,y = (..count..)/sum(..count..))) +
-  scale_y_continuous(labels=scales::percent) + geom_point(aes(x=v , y=vec1))
+  scale_y_continuous(labels=scales::percent) + geom_point(aes(x=v , y=vec_base))
 
+ggplot(CData_CDMX2) +
+  geom_bar(aes(x=Vic_Rob_As,y = (..count..)/sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) + geom_point(aes(x=v , y=vec_base1))
 
 CData_CDMX2_1 <-CData_CDMX2 %>%
   select(-Vic_Rob_As)

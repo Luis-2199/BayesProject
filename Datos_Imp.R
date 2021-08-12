@@ -8,6 +8,7 @@ library(boot)
 setwd("C:/Users/edson/Documents/BayesProject")
 load(file="BD_CDMX_Vic.Rda")
 
+##Unimos categorías similares
 for(i in 1:nrow(Data_CDMX)){
   if(Data_CDMX$Pandill[i]==3){
     Data_CDMX$Pandill[i]=2
@@ -32,11 +33,16 @@ for(i in 1:nrow(Data_CDMX)){
   }
 }
 
+##Se eliminan datos irrelevantes
 Data_CDMX <- Data_CDMX %>% 
   filter(Edad!=98) %>% 
   select(-Nom_Ent,-Vic_Sex)
 
-Data_CDMX2 <- Data_CDMX
+##Creamos un respaldo con los factores para crear la correlación
+Data_CDMX2 <- Data_CDMX %>% 
+  filter(Data_CDMX$Nom_Mun != 9, Data_CDMX$Sexo != 9,Data_CDMX$Niv_Edu != 9,Data_CDMX$Imp_Seg != 9,Data_CDMX$Seg_Loc!= 9,
+          Data_CDMX$Seg_Mun!= 9,Data_CDMX$Alum!= 9,Data_CDMX$Agua!= 9,Data_CDMX$Pandill!= 9,Data_CDMX$Robos!= 9,Data_CDMX$Del_Esc!= 9,
+          Data_CDMX$Mas_Op_Del!= 9, Data_CDMX$Mas_Pat_Vil!= 9, Data_CDMX$Vehic!= 9)
 
 Data_CDMX2$Nom_Mun <- as_factor(Data_CDMX2$Nom_Mun)
 Data_CDMX2$Sexo <- as_factor(Data_CDMX2$Sexo)
@@ -58,30 +64,11 @@ Data_CDMX2$Vehic <- as_factor(Data_CDMX2$Vehic)
 sum_ini <- summary(Data_CDMX2)
 
 
-
-
-
-
-
-colnames(Data_CDMX)
-
-levels(Data_CDMX$Imp_Seg) #"0" "1"
-levels(Data_CDMX$Seg_Loc) #"1" "2" "9"
-levels(Data_CDMX$Seg_Mun) #"1" "2" "9"
-levels(Data_CDMX$Alum) #"1" "2" "9"
-levels(Data_CDMX$Agua) #"1" "2" "9"
-levels(Data_CDMX$Pandill) #"1" "2" "9"
-levels(Data_CDMX$Robos) #"1" "2" "9"
-levels(Data_CDMX$Del_Esc) #"1" "2" "9"
-levels(Data_CDMX$Mas_Op_Del) #"1" "2" "9"
-levels(Data_CDMX$Mas_Pat_Vil) #"1" "2" "9"
-levels(Data_CDMX$Vehic) #"1" "2" "9"
-
+##Separamos a las personas que sufrieron siniestros y las que no.(Paso 1 para la imputación)
 d1 <- Data_CDMX %>% filter(Vic_Rob_As != 0)
-
 d2 <- Data_CDMX %>% filter(Vic_Rob_As == 0)
 
-#d1
+#d1. Obtenemos proporciones de gente asaltada en todas las categorías que no fueran desconocidas
 {
   sum(d1$Seg_Loc==1) #262
   sum(d1$Seg_Loc==2) #815/1077
@@ -114,7 +101,7 @@ d2 <- Data_CDMX %>% filter(Vic_Rob_As == 0)
   sum(d1$Vehic==2) #656/1081
 }
 
-#d2
+#d2. Obtenemos proporciones de gente no asaltada en todas las categorías que no fueran desconocidas
 {
   sum(d2$Seg_Loc==1) #1517
   sum(d2$Seg_Loc==2) #2802/4319
@@ -149,6 +136,8 @@ d2 <- Data_CDMX %>% filter(Vic_Rob_As == 0)
 
 
 set.seed(3)
+
+##Realizamos la imputación
 for(i in 1:nrow(d1)){
   d1$Seg_Loc[i] <- ifelse(d1$Seg_Loc[i]==9,rbernoulli(1,815/1077)+1,d1$Seg_Loc[i])
   d1$Seg_Mun[i] <- ifelse(d1$Seg_Mun[i]==9,rbernoulli(1,937/1079)+1, d1$Seg_Mun[i])
@@ -175,8 +164,10 @@ for (i in 1:nrow(d2)){
   d2$Vehic[i] <- ifelse(d2$Vehic[i]==9,rbernoulli(1,2496/4329)+1,d2$Vehic[i])
 }
 
+##Juntamos las 2 tablas
 CData_CDMX <- rbind(d1,d2)
 
+##Categorizamos con factores las columnas correspondientes
 CData_CDMX$Nom_Mun <- as_factor(CData_CDMX$Nom_Mun)
 CData_CDMX$Sexo <- as_factor(CData_CDMX$Sexo)
 CData_CDMX$Niv_Edu <- as_factor(CData_CDMX$Niv_Edu)
@@ -194,17 +185,17 @@ CData_CDMX$Mas_Op_Del <- as_factor(CData_CDMX$Mas_Op_Del)
 CData_CDMX$Mas_Pat_Vil <- as_factor(CData_CDMX$Mas_Pat_Vil)
 CData_CDMX$Vehic <- as_factor(CData_CDMX$Vehic)
 
-sum_fin <- summary(CData_CDMX)
-
-CData_CDMX2<-CData_CDMX %>% 
-  mutate(Vic_Rob_As=ifelse(Vic_Rob_As>0,1,0))
+##Checamos que las correlaciones no cambiaran
+au <- hetcor(Data_CDMX2)
+au2 <- au$correlations
+corrplot(au2)
 
 DF1<-Data_CDMX %>% 
   select(Vic_Rob_As,Seg_Loc) %>% 
   filter(Seg_Loc != 9)
 DF1$Seg_Loc <- as_factor(DF1$Seg_Loc)
 
-au <- hetcor(DF1)
+au <- hetcor(Data_CDMX2)
 au2 <- au$correlations
 corrplot(au2)
 
@@ -292,59 +283,13 @@ au <- hetcor(DF10)
 au2 <- au$correlations
 corrplot(au2)
 
-sum_fin <- summary(CData_CDMX2)
-au <- hetcor(CData_CDMX2)
-au2 <- au$correlations
-corrplot(au2)
-
-# Lo que hizo Pime
-  Data_CDMX.9 <- Data_CDMX %>% filter(Data_CDMX$Nom_Mun != 9, Data_CDMX$Sexo != 9,Data_CDMX$Niv_Edu != 9,Data_CDMX$Imp_Seg != 9,Data_CDMX$Seg_Loc!= 9,
-                                      Data_CDMX$Seg_Mun!= 9,Data_CDMX$Alum!= 9,Data_CDMX$Agua!= 9,Data_CDMX$Pandill!= 9,Data_CDMX$Robos!= 9,Data_CDMX$Del_Esc!= 9,
-                                      Data_CDMX$Mas_Op_Del!= 9, Data_CDMX$Mas_Pat_Vil!= 9, Data_CDMX$Vehic!= 9)
+##Sacamos la correlación general
+sum_fin <- summary(CData_CDMX)
+au_1 <- hetcor(CData_CDMX)
+au2_1 <- au_1$correlations
+corrplot(au2_1)
   
-  
-  
-  # Modelo Edson
-  
-  D1 <- Data_CDMX.9 %>% filter(Vic_Rob_As != 0)
-  
-  D2 <- Data_CDMX.9 %>% filter(Vic_Rob_As == 0)
-  
-  sum(D1$Vehic == 1)
-  sum(D2$Vehic == 1)
-  
-  sum(D1$Mas_Pat_Vil == 1)
-  sum(D2$Mas_Pat_Vil == 1)
-  
-  sum(D1$Mas_Op_Del == 1)
-  sum(D2$Mas_Op_Del == 1)
-  
-  sum(D1$Del_Esc == 1)
-  sum(D2$Del_Esc == 1)
-  
-  sum(D1$Robos == 1)
-  sum(D2$Robos == 1)
-  
-  sum(D1$Pandill == 1)
-  sum(D2$Pandill == 1)
-  
-  sum(D1$Agua == 1)
-  sum(D2$Agua == 1)
-  
-  sum(D1$Alum == 1)
-  sum(D2$Alum == 1)
-  
-  sum(D1$Seg_Mun == 1)
-  sum(D2$Seg_Mun == 1)
-  
-  sum(D1$Seg_Loc == 1)
-  sum(D2$Seg_Loc == 1)
-  
-  sum(D1$Imp_Seg == 1)
-  sum(D2$Imp_Seg == 1)
-  
-  
-  
+##Quitamos variables que se representaran lo mismo en el modelo
   CData_CDMX1 <- CData_CDMX %>% 
     select(-Pos_OCup,-Seg_Loc,-Alum,-Agua,-Pandill,-Robos,-Del_Esc,-Mas_Op_Del)
   
@@ -352,7 +297,14 @@ corrplot(au2)
   au2 <- au$correlations
   corrplot(au2)
   
-  # Eliminamos sexo
+  Data_C <- Data_CDMX2 %>% 
+    select(-Pos_OCup,-Seg_Loc,-Alum,-Agua,-Pandill,-Robos,-Del_Esc,-Mas_Op_Del)
+  
+  au <- hetcor(Data_C)
+  au2 <- au$correlations
+  corrplot(au2)
+  
+  # Eliminamos sexo y agrupamos las alcaldías, niveles educativos y situación laboral
   Region <- rep(0,length(CData_CDMX1$Nom_Mun))
   for(i in 1:length(CData_CDMX1$Nom_Mun)){
     if(CData_CDMX1$Nom_Mun[i] %in% c("Gustavo A. Madero","Venustiano Carranza","Iztacalco")){
@@ -366,8 +318,6 @@ corrplot(au2)
     }
   }
 
-  
-  
   Nivel_Edu <- rep("",length(CData_CDMX1$Niv_Edu))
   for(i in 1:length(CData_CDMX1$Niv_Edu)){
     if(CData_CDMX1$Niv_Edu[i] %in% c(0,1,2)){
@@ -404,9 +354,6 @@ corrplot(au2)
   au <- hetcor(CData_CDMX2)
   au2 <- au$correlations
   corrplot(au2)
-  
-  r <- xtabs(~Vic_Rob_As + Region, data=CData_CDMX2)
-  chisq.test(r)
   
   
   ####Guardamos bases de datos

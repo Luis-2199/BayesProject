@@ -1,75 +1,5 @@
-library(rjags)
-library(tidyverse)
-library(ROCR)
-library(pROC)
-library(car)
+load("BD_CDMX5.Rda")
 
-load("BD_CDMX2.Rda")
-##Creamos base con respuesta 1 y 0
-CData_CDMX3 <- CData_CDMX2 %>% 
-  mutate(Vic_Rob_As = ifelse(Vic_Rob_As>0,1,0))
-CData_CDMX3$Vic_Rob_As <- as_factor(CData_CDMX3$Vic_Rob_As)
-
-## Primer modelo con todas las covariables
-modlog1 <- glm(Vic_Rob_As ~ .,family = "binomial", data=CData_CDMX3)
-summary(modlog1)
-
-
-## Hallamos punto de corte gráfica y teóricamente
-predictions1 <- prediction(modlog1$fitted.values,CData_CDMX3$Vic_Rob_As)
-
-plot(unlist(performance(predictions1, "sens")@x.values), unlist(performance(predictions1, "sens")@y.values),
-     type="l", lwd=2, ylab="Sensitivity", xlab="Punto de Corte")
-par(new=TRUE)
-plot(unlist(performance(predictions1, "spec")@x.values), unlist(performance(predictions1, "spec")@y.values),
-     type="l", lwd=2, col='red', ylab="", xlab="")
-
-rest1 <- abs(unlist(performance(predictions1, "sens")@y.values)-unlist(performance(predictions1, "spec")@y.values))
-opt1 <- unlist(performance(predictions1, "sens")@x.values)[which(rest1==min(rest1))]
-
-##Checamos multicolinealidad
-vif(modlog1)
-
-#Matriz de Confusión
-r1 <- ifelse(modlog1$fitted.values>=opt1,1,0)
-table(r1,CData_CDMX3$Vic_Rob_As)  ###62.32%
-
-
-## Modelo Sin Importancia de la Seguridad
-modlog2 <- glm(Vic_Rob_As ~ Edad + Sit_Lab + Seg_Mun + Mas_Pat_Vil + Nivel_Edu + Region, family = "binomial",data=CData_CDMX3)
-smod2 <- summary(modlog2)
-fittedfrec <- modlog2$fitted.values
-
-#Punto de Corte
-predictions2 <- prediction(modlog2$fitted.values,CData_CDMX3$Vic_Rob_As)
-
-plot(unlist(performance(predictions2, "sens")@x.values), unlist(performance(predictions2, "sens")@y.values),
-     type="l", lwd=2, ylab="Sensitivity", xlab="Punto de Corte")
-par(new=TRUE)
-plot(unlist(performance(predictions2, "spec")@x.values), unlist(performance(predictions2, "spec")@y.values),
-     type="l", lwd=2, col='red', ylab="", xlab="")
-
-rest2 <- abs(unlist(performance(predictions2, "sens")@y.values)-unlist(performance(predictions2, "spec")@y.values))
-opt2 <- unlist(performance(predictions2, "sens")@x.values)[which(rest2==min(rest2))]
-
-
-vif(modlog2)
-
-r2 <- ifelse(modlog2$fitted.values>=opt2,1,0)
-table(r2,CData_CDMX3$Vic_Rob_As)  ###62.02%
-
-##Distancias de Cook
-cooks.distance(modlog2)
-plot(modlog2,4)
-
-outlierTest(modlog2)
-
-vec2 <- rbinom(length(modlog2$fitted.values),1,modlog2$fitted.values)
-table(vec2,CData_CDMX3$Vic_Rob_As) ###70.05%
-
-
-## Eliminamos el dato atípico
-CData_CDMX5 <- CData_CDMX3[-824,]
 
 modlog3 <- glm(Vic_Rob_As ~ Edad + Sit_Lab + Seg_Mun + Mas_Pat_Vil + Nivel_Edu + Region, family = "binomial",data=CData_CDMX5)
 smod3 <- summary(modlog3)
@@ -158,7 +88,7 @@ Ejemplo16 <- CData_CDMX5 %>%
 
 ##Obtenemos los valores ajustados de nuestra probabilidad
 Tabla <- rbind(Ejemplo2_1[1,],Ejemplo4_1[1,],Ejemplo6_1[1,],Ejemplo8_1[1,],Ejemplo9_1[1,],Ejemplo10_1[1,],Ejemplo12_1[1,],Ejemplo14_1[1,],
-      Ejemplo16_1[1,])
+               Ejemplo16_1[1,])
 p_i <- rep(0,9)
 for(i in 1:9){
   exponente <- sum(betas1 * Tabla[i,])
@@ -188,7 +118,7 @@ data <- list(
   X4 = Mas_Pat_Vil,
   X5 = as.numeric(Nivel_Edu),
   X6 = as.numeric(Region),
-  n = nrow(CData_CDMX5)
+  n = nrow(CData_CDMX3)
 )
 
 
@@ -201,8 +131,8 @@ inits<-function(){list(
 }
 
 fit <- jags.model("Modelo.bug", data, inits, n.chains=3)
-update(fit,1000)
-sample <- coda.samples(fit,param,n.iter = 2000,thin =2)
+update(fit,2000)
+sample <- coda.samples(fit,param,n.iter = 2500,thin =3)
 
 plot(sample)
 ssample <- summary(sample)
@@ -226,19 +156,3 @@ for(i in 1:5418){
 #Obtenemos el error entre ambas
 error <- (fitted - fittedfrec)^2
 sum(error)
-
-#### Modelo Bayesiano Resultados:
-
-predictions <- prediction(fitted,CData_CDMX3$Vic_Rob_As)
-
-plot(unlist(performance(predictions, "sens")@x.values), unlist(performance(predictions, "sens")@y.values),
-     type="l", lwd=2, ylab="Sensitivity", xlab="Punto de Corte")
-par(new=TRUE)
-plot(unlist(performance(predictions, "spec")@x.values), unlist(performance(predictions, "spec")@y.values),
-     type="l", lwd=2, col='red', ylab="", xlab="")
-
-rest <- abs(unlist(performance(predictions, "sens")@y.values)-unlist(performance(predictions, "spec")@y.values))
-opt <- unlist(performance(predictions, "sens")@x.values)[which(rest==min(rest))]
-
-r <- ifelse(fitted>=opt,1,0)
-table(r,CData_CDMX3$Vic_Rob_As)
