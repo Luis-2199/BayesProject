@@ -40,7 +40,7 @@ for(i in 1:n){
 
 y[i] ~ dpois(mu[i])
 mu[i] <- (u[i]+0.000001)*lambda[i]
-u[i] ~ dbern(p[i])
+u[i] ~ dbern(1-p[i])
 
 logit(p[i]) <- alpha0 + alpha1*X1[i] + alpha2[X2[i]] + alpha3[X3[i]] + alpha4[X4[i]] 
 
@@ -80,7 +80,7 @@ beta2[4] ~ dnorm(0.0, 0.0001)
 fit <- jags.model(textConnection(modelo), data, inits, n.chains = 2)
 update(fit, 5000)
 
-sample <- coda.samples(fit, param, n.iter = 3000, thin = 1)
+sample <- coda.samples(fit, param, n.iter = 5000, thin = 1)
 
 plot(sample)
 gelman.plot(sample)
