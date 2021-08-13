@@ -36,9 +36,15 @@ inits <- function(){ list(
 }
 
 
+#### Otra forma de poner el p[i] de JAGS ####
+
+# p[i] <- 1/(1.00001 + exp(-(alpha0 + alpha1*X1[i] + alpha2[X2[i]] + alpha3[X3[i]] + alpha4[X4[i]])))
+
+####
+
 set.seed(120)
-######## como Viene en el articulo
-modelo2 = "model{
+######## como Viene en el articulo #####
+modelo = "model{
 for(i in 1:n){
 
 y[i] ~ dpois(mu[i])
@@ -82,25 +88,25 @@ beta2[4] ~ dnorm(0.0, 0.001)
 "
 
 
-fit2 <- jags.model(textConnection(modelo2), data, inits, n.chains = 3)
-update(fit2, 5000)
+fit <- jags.model(textConnection(modelo), data, inits, n.chains = 3)
+update(fit, 5000)
 
 set.seed(1)
-sample2 <- coda.samples(fit2, param, n.iter = 5000, thin = 2)
+sample <- coda.samples(fit, param, n.iter = 5000, thin = 2)
 
-plot(sample2)
-gelman.plot(sample2)
-summary(sample2)
+plot(sample)
+gelman.plot(sample)
+summary(sample)
 
 #  Simulación 1
-# sample2_sem1 <- sample2
-sample2_sem1 <- sample2_sem1
+# sample_sem1 <- sample
+sample_sem1 <- sample_sem1
 
-plot(sample2_sem1)
-summary(sample2_sem1)
-gelman.plot(sample2_sem1[,3])
-gelman.diag(sample2_sem1[,1])
-traceplot(sample2_sem1)
+plot(sample_sem1)
+summary(sample_sem1)
+gelman.plot(sample_sem1[,3])
+gelman.diag(sample_sem1[,1])
+traceplot(sample_sem1)
 
 
 
@@ -165,7 +171,7 @@ traceplot(sample2_sem1)
 
 
 
-save(sample2_sem1,file="Sample_conv_JAGS.Rda")
+save(sample_sem1,file="Sample_conv_JAGS.Rda")
 
 
 
