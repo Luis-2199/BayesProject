@@ -5,16 +5,30 @@ library(pscl)
 
 load(file = "BD_CDMX2.Rda")
 
+
 CData_CDMX2_resample <- sample_n(CData_CDMX2, 5419)
 
-
+# Ajustamos modelo
 mod_dist_4 <- zeroinfl(Vic_Rob_As ~ Seg_Mun  + Region |
                          Edad + Mas_Pat_Vil + Region + Sit_Lab,
                        data= CData_CDMX2_resample, dist="poisson",link="logit")
 summary(mod_dist_4)
 
 
-#### JAGS
+####### Base sin 7s ########
+CData_CDMX2_sin7 <- CData_CDMX2 %>% filter(Vic_Rob_As < 7)
+
+CData_CDMX2_sin7_resample <- sample_n(CData_CDMX2_sin7, 5419)
+
+# Ajustamos modelo
+mod_ZIPsin7 <- zeroinfl(Vic_Rob_As ~ Seg_Mun  + Region |
+                          Edad + Mas_Pat_Vil + Region + Sit_Lab,
+                        data= CData_CDMX2_sin7, dist="poisson",link="logit")
+summary(mod_ZIPsin7)
+
+
+
+#### JAGS ######
 attach(CData_CDMX2_resample)
 
 data <- list(
