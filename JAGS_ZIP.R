@@ -29,7 +29,7 @@ summary(mod_ZIPsin7)
 
 
 #### JAGS ######
-attach(CData_CDMX2_resample)
+attach(CData_CDMX2_sin7)
 
 data <- list(
   y = Vic_Rob_As,
@@ -50,14 +50,13 @@ inits <- function(){ list(
 }
 
 
-#### Otra forma de poner el p[i] de JAGS ####
+#### Otra forma de poner el p[i] de JAGS 
 
 # p[i] <- 1/(1.00001 + exp(-(alpha0 + alpha1*X1[i] + alpha2[X2[i]] + alpha3[X3[i]] + alpha4[X4[i]])))
 
-####
 
 set.seed(120)
-######## como Viene en el articulo #####
+######## como Viene en el articulo 
 modelo = "model{
 for(i in 1:n){
 
@@ -65,7 +64,7 @@ y[i] ~ dpois(mu[i])
 mu[i] <- u[i]*lambda[i] + 0.00001
 u[i] ~ dbern(p[i])
 
-logit(p[i]) <- alpha0 + alpha1*X1[i] + alpha2[X2[i]] + alpha3[X3[i]] + alpha4[X4[i]] 
+p[i] <- 1/(1.00001 + exp(-(alpha0 + alpha1*X1[i] + alpha2[X2[i]] + alpha3[X3[i]] + alpha4[X4[i]])))
 
 log(lambda[i]) <- beta0 + beta1[X5[i]] + beta2[X3[i]]
 
@@ -101,19 +100,17 @@ beta2[4] ~ dnorm(0.0, 0.001)
 }
 "
 
-
-fit <- jags.model(textConnection(modelo), data, inits, n.chains = 3)
+fit <- jags.model(textConnection(modelo), data, inits, n.chains = 2)
 update(fit, 5000)
 
-set.seed(1)
 sample <- coda.samples(fit, param, n.iter = 5000, thin = 2)
 
 plot(sample)
-gelman.plot(sample)
+gelman.plot(sample[,4])
 summary(sample)
 
 #  Simulación 1
-# sample_sem1 <- sample
+sample_sem1 <- sample
 sample_sem1 <- sample_sem1
 
 plot(sample_sem1)
@@ -189,6 +186,6 @@ save(sample_sem1,file="Sample_conv_JAGS.Rda")
 
 
 
-
+predict.zeroinfl
 
 

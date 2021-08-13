@@ -22,13 +22,30 @@ xtabs(~ Vic_Rob_As + Nivel_Edu , data = CData_CDMX2)
 xtabs(~ Vic_Rob_As + Sit_Lab , data = CData_CDMX2)
 
 # Tablas con gráfica
-as_tibble(xtabs(~ Vic_Rob_As+ Imp_Seg, data = CData_CDMX2)) %>% ggplot() + geom_bar(aes(x=Vic_Rob_As, y = n), stat = "identity")
+# Impresión Seguridad 
+as_tibble(xtabs(~ Imp_Seg + Vic_Rob_As, data = CData_CDMX2)) %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Imp_Seg), stat = "identity", color = "black", position = position_dodge())
+# Segurdad Municipal
+as_tibble(xtabs(~ Seg_Mun + Vic_Rob_As , data = CData_CDMX2)) %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Seg_Mun), stat = "identity", color = "black", position = position_dodge())
+# Mas Patrullas Vigilando
+as_tibble(xtabs(~ Mas_Pat_Vil + Vic_Rob_As, data = CData_CDMX2)) %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Mas_Pat_Vil), stat = "identity", color = "black", position = position_dodge())
+# Region
+as_tibble(xtabs(~ Region + Vic_Rob_As , data = CData_CDMX2)) %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Region), stat = "identity", color = "black", position = position_dodge())
+# Nivel Educativo
+as_tibble(xtabs(~ Vic_Rob_As + Nivel_Edu , data = CData_CDMX2))  %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Nivel_Edu), stat = "identity", color = "black", position = position_dodge())
+# Sit_Lab 
+as_tibble(xtabs(~ Vic_Rob_As + Sit_Lab , data = CData_CDMX2))  %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Sit_Lab), stat = "identity", color = "black", position = position_dodge())
 
 
 # Boxplot (Edad)
 
 ggplot(CData_CDMX2, aes(x = Vic_Rob_As , y = Edad)) +
-geom_boxplot()
+geom_boxplot() + facet_wrap(~ Vic_Rob_As)
 
 
 
@@ -56,15 +73,11 @@ Datos_Tasas <- tibble(Datos_Tasas, Tasas = signif(Tasas, digits = 4))
 
 # Gráfica por región # Modificar
 Datos_Tasas %>% 
-  ggplot(aes(x = "", y = Tasas, fill = Region)) +
+  ggplot(aes(x = Region, y = Tasas, fill = Region)) +
   geom_bar(stat = "identity", color = "White") +
-  # scale_color_hue(l = 40, c = 35) +
-  # scale_fill_hue(l = 40, c = 35) +
-  coord_polar(theta = "y")  + 
-  geom_text(aes(label = paste0(Tasas, "%")), position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL) +
 # theme(axis.text.x = element_text(size = 7, angle = 45))
-  scale_fill_brewer(palette = "Blues") 
+  scale_fill_brewer(palette = "Reds") 
 
 
 
