@@ -1,0 +1,30 @@
+model{
+  for(i in 1:n){
+    y[i] ~ dbern(p[i])
+    p[i] <- 1/(1.00001+exp(-(alpha+ beta1*X1[i] + beta2[X2[i]] + beta3[X3[i]]+ beta4[X4[i]]+ beta5[X5[i]]+ beta6[X6[i]] )))
+  }
+
+   alpha ~ dnorm(0.0, 0.0001)
+   beta1 ~ dnorm(0.0, 0.0001)
+
+   beta2[1] <- 0
+   beta2[2] ~ dnorm(0.0, 0.0001)
+   beta2[3] ~ dnorm(0.0, 0.0001)
+
+   beta3[1] <- 0
+   beta3[2] ~ dnorm(0.0, 0.0001)
+
+   beta4[1] <- 0
+   beta4[2] ~ dnorm(0.0, 0.0001)
+
+   beta5[1] <- 0
+   beta5[2] ~ dnorm(0.0, 0.0001)
+   beta5[3] ~ dnorm(0.0, 0.0001)
+   beta5[4] ~ dnorm(0.0, 0.0001)
+   beta5[5] ~ dnorm(0.0, 0.0001)
+
+   beta6[1] <- 0
+   beta6[2] ~ dnorm(0.0, 0.0001)
+   beta6[3] ~ dnorm(0.0, 0.0001)
+   beta6[4] ~ dnorm(0.0, 0.0001)
+}
