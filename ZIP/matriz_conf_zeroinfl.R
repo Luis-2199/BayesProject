@@ -58,7 +58,7 @@ sim_conf_mat_zeroinfl <- function(mod, res=CData_CDMX2$Vic_Rob_As, n=100,
 }
 
 
-######### Funcion Multiples simulaciones SEGUNDA versión###########################
+######### ESTA ES LA CHIDA Funcion Multiples simulaciones SEGUNDA versión######
 sim_conf_mat_zeroinfl2 <- function(mod, res=CData_CDMX2$Vic_Rob_As, n=100,
                                   muest.size=n_muestra){
   
@@ -85,27 +85,9 @@ sim_conf_mat_zeroinfl2 <- function(mod, res=CData_CDMX2$Vic_Rob_As, n=100,
 }
 
 
-################################################# Ejemplo con la profa
-p <- predict(mod_dist_4, type = "zero")
-lambda <- predict(mod_dist_4, type = "count")
-sim <- array(NA, dim = c(n_muestra))
 
-for (j in 1:n_muestra) {
-  sim[j] <- rzipois(1, lambda = lambda[j], pstr0 = p[j])
-}
-  # Simulaciones
-  # conf <- table(colMeans(sim), CData_CDMX2$Vic_Rob_As) # Matriz de confusion
-  # aux[i] <- sum(diag(conf))/muest.size # Guardamos la proporcion de exito
-
-set.seed(20)
-# rzipois(1, lambda = lambda[2], pstr0 = p[2])
- a2 <- rzipois(1, lambda = lambda[7], pstr0 = p[7]) ; a1[7] == a2 # Contraejemplo (Pedro Pablo)
- b <- rzipois(n_muestra, lambda = lambda, pstr0 = p[2])
-
-conf <- table(sim, CData_CDMX2$Vic_Rob_As)
-sum(diag(conf))/n_muestra
-######### Funcion Multiples simulaciones TERCERA versión###########################
-sim_conf_mat_zeroinfl3 <- function(mod, muest.size=n_muestra){
+######### Funcion Multiples simulaciones MEDIA########################
+sim_media_zeroinfl <- function(mod, muest.size=n_muestra){
   
   # Cargamos los valores estimados para p y lambda
   p <- predict(mod, type = "zero") # Proba de 0
@@ -118,21 +100,76 @@ sim_conf_mat_zeroinfl3 <- function(mod, muest.size=n_muestra){
     for (j in 1:muest.size) {
       sim[j] <- rzipois(1, lambda = lambda[j], pstr0 = p[j])
     }
-    
-  #   # Simulaciones
-  #   conf <- table(sim, res) # Matriz de confusion
-  #   aux[i] <- sum(diag(conf))/muest.size # Guardamos la proporcion de exito
-  # }
   
-  
-  return(mean(sim)) # Proporcion de exito promedio
+  return(mean(sim)) # Media de la simulacion
 }
 
 
 
-#####  Aplicamos diferente num de simulaciones #####################
-sim_conf_mat_zeroinfl2(mod_dist_4, n =100); mean(CData_CDMX2$Vic_Rob_As) # 0.6822144
-sim_conf_mat_zeroinfl(mod_dist_4, n = 1000)       # 0.681764
-sim_conf_mat_zeroinfl(mod_dist_4, n = 10000)
+######### Funcion Multiples simulaciones REGPOISSON ##############
+sim_conf_mat_poi <- function(mod, res=CData_CDMX2$Vic_Rob_As, n=100,
+                                   muest.size=n_muestra){
+  
+  ####### Simulacion Reg Poisson
+  mu <- exp(predict(mod_PoiSin7))
+  sim_Poi <- rep(0, times = N)
+  for(i in 1:muest.size){
+    sim_Poi[i] <- rpois(1, lambda = mu[i])
+  }
+  
+  aux <- rep(0, times = n) # Vector que almacenara la prop de exito
+  sim <- array(NA, dim = c(muest.size))
+  
+  # Ciclo para simular
+  for (i in 1:n) {
+    
+    for (j in 1:muest.size) {
+      sim[j] <- rzipois(1, lambda = lambda[j], pstr0 = p[j])
+    }
+    
+    # Simulaciones
+    conf <- table(sim, res) # Matriz de confusion
+    aux[i] <- sum(diag(conf))/muest.size # Guardamos la proporcion de exito
+  }
+  
+  return(mean(aux)) # Proporcion de exito promedio
+}
+
+######### Funcion Multiples simulaciones BAYES ##############
+sim_conf_mat_bayes <- function(pred, res=CData_CDMX2$Vic_Rob_As, n=100,
+                             muest.size=n_muestra){
+  
+  aux <- rep(0, times = n) # Vector que almacenara la prop de exito
+  sim_aux <- array(NA, dim = c(muest.size))
+  
+  # Ciclo para simular
+  for (i in 1:n) {
+    
+    for (j in 1:muest.size) {
+      sim_aux[j] <- rzipois(1, lambda = pred$lambda[j], pstr0 = pred$p[j])
+    }
+    
+    # Simulaciones
+    conf <- table(sim_aux, res) # Matriz de confusion
+    aux[i] <- sum(diag(conf))/muest.size # Guardamos la proporcion de exito
+  }
+  
+  return(mean(aux)) # Proporcion de exito promedio
+}
+
+
+
+######### Funcion Multiples simulaciones BAYES MEDIA ########################
+sim_media_bayes <- function(pred, muest.size=n_muestra){
+  sim <- array(NA, dim = c(muest.size))
+  
+  # Ciclo para simular
+  
+  for (j in 1:muest.size) {
+    sim[j] <- rzipois(1, lambda = pred$lambda[j], pstr0 = pred$p[j])
+  }
+  
+  return(mean(sim)) # Media de la simulacion
+}
 
 

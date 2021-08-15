@@ -1,0 +1,1164 @@
+---
+output:
+    pdf_document:
+        latex_engine: xelatex
+        number_sections: yes
+        fig_caption: yes
+        toc: yes
+header includes:
+  - \usepackage[T1]{fontenc}
+  - \usepackage[utf8]{inputenc}
+  - \usepackage{amsmath}
+  - \usepackage{amssymb}
+  - \usepackage{amsthm}
+  - \usepackage{amsfonts}
+  - \usepackage{multirow}
+  - \usepackage{booktabs}
+  - \usepackage{graphicx}
+  - \usepackage{xcolor}
+  - \usepackage{listings} 
+  - \usepackage{setspace}
+  - \usepackage{bbm}
+  - \setlength{\parindent}{0in}
+  - \usepackage{float}
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy} 
+  - \fancyhf{}
+  - \usepackage{xspace}
+  - \usepackage{natbib}
+  - \usepackage{longtable}
+  - \usepackage{rotating}
+  - \usepackage{bbm}
+
+---
+
+\begin{titlepage}
+\centering
+
+\begin{figure}[t]
+    \raggedright
+    \includegraphics[width=0.180\textwidth]{unam}~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    \raggedleft
+    \includegraphics[width=0.175\textwidth]{fac}
+\end{figure}
+
+{\bfseries\Huge Universidad Nacional \par}
+{\bfseries\Huge Autónoma de México \par}
+
+\vspace{1cm}
+{\scshape\Huge Facultad de Ciencias \par}
+\vspace{3cm}
+\rule{14cm}{0.1mm}\par
+{\scshape\Huge Proyecto Final \par}
+\rule{14cm}{0.1mm}
+\vspace{1.5cm}
+
+{\itshape\LARGE Estadística Bayesiana \par}
+\vspace{1.5cm}
+
+\vfill
+{\normalsize Castro Gómez Pedro Pablo \par}
+{\normalsize Fernández García Edson Jehovani \par}
+{\normalsize Martínez Herrera Tania Melisa \par}
+{\normalsize Pimentel Bolívar Luis Emmanuel \par}
+\vfill
+
+\end{titlepage}
+
+\clearpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F,
+                      warning = F,
+                      message = F,
+                      fig.align = 'center',
+  out.width = '8in',
+  out.height = '3in')
+
+library(tidyverse)
+library(corrplot)
+library(polycor)
+library(glm2)
+library(pscl)
+library(boot)
+library(ROCR)
+library(pROC)
+library(rjags)
+library(car)
+library(ggplot2)
+library(modelr)
+library(knitr)
+library(kableExtra)
+library(ggpubr)
+load(file="BD_CDMX_Vic.Rda")
+pal <- c("#00B8C2", "#C862C9", "#62C3C9", "#62C96B", "#BCC962")
+```
+
+# Introducción 
+
+La Encuesta Nacional de Victimización y Percepción sobre Seguridad Pública (ENVIPE) es un instrumento realizado y aplicado por el INEGI con múltiples objetivos. Entre ellos se encuentran medir la victimización personal y del hogar, estimar el número de víctimas y número de delitos ocurridos a lo largo del año y realizar algunas otras mediciones y estimaciones relevantes sobre victimización y percepción de la seguridad de los mexicanos. Todo esto se realiza con el fin de generar información disponible para el público general y que sea de utilidad para la implementación y mejora de políticas públicas en la materia. La ENVIPE arroja como resultado información en forma de tabulados con estimaciones y bases de datos de las respuestas obtenidas. 
+
+Para la realización de este proyecto, se trabajó con la base de datos de respuestas de la encuesta realizada en 2019, centrándose en estudiar y modelar el número de robos y/o asaltos ocurridos a los encuestados cuya residencia se encuentra en la CDMX. En particular, es de interés contestar a los cuestionamientos: ¿existe alguna  relación entre ser víctima de robo y las condiciones y/o características de las personas (de acuerdo con los datos que recopiló la encuesta)? ¿El número de veces que se es víctima a lo largo del año puede tener relación con dichas características?
+
+Para contestar estas preguntas, se realizó el análisis y posterior modelación tanto de la probabilidad de sufrir algún robo o asalto como del número de veces que se fue víctima a lo largo del año de alguno de estos delitos. Para ambas variables se consideraron diversas características de los encuestados.
+
+# Limpieza de la Base
+
+En un principio, se tomó a consideración aquellas preguntas realizadas que a primera instancia pareciesen influir en el valor de nuestras variables respuesta. Así, se consideró como opción a las siguientes covariables:
+
+1. Sexo 
+
+2. Edad
+
+3. Nivel educativo (Niv_Edu)
+
+4. Nombre de la alcaldía (Nom_Mun)
+
+5. Situación laboral (Sit_Lab_Act)
+
+6. Posición ocupacional (Pos_Ocup)
+
+7. Importancia de la seguridad para la persona en su localidad (Imp_Seg)
+
+8. Considera segura su localidad (Seg_Loc)
+
+9. Considera segura su alcaldía (Seg_Mun)
+
+10. Problemas en su localidad de: Alumbrado (Alum), agua (Agua), pandillas (Pandill), robos (Robos) o delincuencia en las escuelas (Del_Esc)
+
+11. Aumento de operativos contra la delincuencia en su localidad (Mas_Op_Del)
+
+12. Aumento de patrullas de vigilancia en su localidad (Mas_Pat_Vil)
+
+13. Alguien de su hogar posea un vehículo (Vehic). 
+
+
+Las primeras anotaciones con respecto a estas candidatas fueron el exceso de respuestas a varias de las preguntas cuya connotación fuera no útil para la creación de un modelo, ya que dichas respuestas eran análogas a un "No sé"; en segunda instancia, lo que se puede analizar en el siguiente correlograma: 
+
+```{r Limpieza de Base, fig.cap= 'Correlograma Variables Iniciales', out.width='4in'}
+
+
+##Unimos categorias similares
+for(i in 1:nrow(Data_CDMX)){
+  if(Data_CDMX$Pandill[i]==3){
+    Data_CDMX$Pandill[i]=2
+  }
+  if(Data_CDMX$Robos[i]==3){
+    Data_CDMX$Robos[i]=2
+  }
+  if(Data_CDMX$Del_Esc[i]==3){
+    Data_CDMX$Del_Esc[i]=2
+  }
+  if(Data_CDMX$Mas_Op_Del[i]==2){
+    Data_CDMX$Mas_Op_Del[i]=9
+  }
+  if(Data_CDMX$Mas_Op_Del[i]==3){
+    Data_CDMX$Mas_Op_Del[i]=2
+  }
+  if(Data_CDMX$Mas_Pat_Vil[i]==2){
+    Data_CDMX$Mas_Pat_Vil[i]=9
+  }
+  if(Data_CDMX$Mas_Pat_Vil[i]==3){
+    Data_CDMX$Mas_Pat_Vil[i]=2
+  }
+}
+
+##Se eliminan datos irrelevantes
+Data_CDMX <- Data_CDMX %>% 
+  filter(Edad!=98 & Vic_Rob_As !=7) %>% 
+  select(-Nom_Ent,-Vic_Sex)
+
+##Creamos un respaldo con los factores para crear la correlaci?n
+Data_CDMX2 <- Data_CDMX %>% 
+  filter(Data_CDMX$Nom_Mun != 9, Data_CDMX$Sexo != 9,Data_CDMX$Niv_Edu != 9,Data_CDMX$Imp_Seg != 9,Data_CDMX$Seg_Loc!= 9,
+          Data_CDMX$Seg_Mun!= 9,Data_CDMX$Alum!= 9,Data_CDMX$Agua!= 9,Data_CDMX$Pandill!= 9,Data_CDMX$Robos!= 9,Data_CDMX$Del_Esc!= 9,
+          Data_CDMX$Mas_Op_Del!= 9, Data_CDMX$Mas_Pat_Vil!= 9, Data_CDMX$Vehic!= 9)
+
+Data_CDMX2$Nom_Mun <- as_factor(Data_CDMX2$Nom_Mun)
+Data_CDMX2$Sexo <- as_factor(Data_CDMX2$Sexo)
+Data_CDMX2$Niv_Edu <- as_factor(Data_CDMX2$Niv_Edu)
+Data_CDMX2$Sit_Lab_Act <- as_factor(Data_CDMX2$Sit_Lab_Act)
+Data_CDMX2$Pos_OCup <- as_factor(Data_CDMX2$Pos_OCup)
+Data_CDMX2$Imp_Seg <- as_factor(Data_CDMX2$Imp_Seg)
+Data_CDMX2$Seg_Loc <- as_factor(Data_CDMX2$Seg_Loc)
+Data_CDMX2$Seg_Mun <- as_factor(Data_CDMX2$Seg_Mun)
+Data_CDMX2$Alum <- as_factor(Data_CDMX2$Alum)
+Data_CDMX2$Agua <- as_factor(Data_CDMX2$Agua)
+Data_CDMX2$Pandill <- as_factor(Data_CDMX2$Pandill)
+Data_CDMX2$Robos <- as_factor(Data_CDMX2$Robos)
+Data_CDMX2$Del_Esc <- as_factor(Data_CDMX2$Del_Esc)
+Data_CDMX2$Mas_Op_Del <- as_factor(Data_CDMX2$Mas_Op_Del)
+Data_CDMX2$Mas_Pat_Vil <- as_factor(Data_CDMX2$Mas_Pat_Vil)
+Data_CDMX2$Vehic <- as_factor(Data_CDMX2$Vehic)
+
+sum_ini <- summary(Data_CDMX2)
+
+
+##Separamos a las personas que sufrieron siniestros y las que no.(Paso 1 para la imputaci?n)
+d1 <- Data_CDMX %>% filter(Vic_Rob_As != 0)
+d2 <- Data_CDMX %>% filter(Vic_Rob_As == 0)
+
+#d1. Obtenemos proporciones de gente asaltada en todas las categor?as que no fueran desconocidas
+# {
+#   sum(d1$Seg_Loc==1) #262
+#   sum(d1$Seg_Loc==2) #815/1077
+#   
+#   sum(d1$Seg_Mun==1) #142
+#   sum(d1$Seg_Mun==2) #937/1079
+#   
+#   sum(d1$Alum==1) #635
+#   sum(d1$Alum==2) #447/1082
+#   
+#   sum(d1$Agua==1) #576
+#   sum(d1$Agua==2) #506/1082
+#   
+#   sum(d1$Pandill==1) #468
+#   sum(d1$Pandill==2) #595/1063
+#   
+#   sum(d1$Robos==1) #937
+#   sum(d1$Robos==2) #142/1079
+#   
+#   sum(d1$Del_Esc==1) #537
+#   sum(d1$Del_Esc==2) #351/888
+#   
+#   sum(d1$Mas_Op_Del==1) #301
+#   sum(d1$Mas_Op_Del==2) #504/805
+#   
+#   sum(d1$Mas_Pat_Vil==1) #365
+#   sum(d1$Mas_Pat_Vil==2) #518/883
+#   
+#   sum(d1$Vehic==1) #425
+#   sum(d1$Vehic==2) #656/1081
+# }
+
+#d2. Obtenemos proporciones de gente no asaltada en todas las categor?as que no fueran desconocidas
+# {
+#   sum(d2$Seg_Loc==1) #1517
+#   sum(d2$Seg_Loc==2) #2802/4319
+#   
+#   sum(d2$Seg_Mun==1) #923
+#   sum(d2$Seg_Mun==2) #3387/4310
+#   
+#   sum(d2$Alum==1) #2135
+#   sum(d2$Alum==2) #2190/4325
+#   
+#   sum(d2$Agua==1) #2030
+#   sum(d2$Agua==2) #2299/4329
+#   
+#   sum(d2$Pandill==1) #1337
+#   sum(d2$Pandill==2) #2943/4280
+#   
+#   sum(d2$Robos==1) #3228
+#   sum(d2$Robos==2) #1068/4296
+#   
+#   sum(d2$Del_Esc==1) #1540
+#   sum(d2$Del_Esc==2) #1941/3481
+#   
+#   sum(d2$Mas_Op_Del==1) #998
+#   sum(d2$Mas_Op_Del==2) #2226/3214
+#   
+#   sum(d2$Mas_Pat_Vil==1) #1723
+#   sum(d2$Mas_Pat_Vil==2) #1934/3657
+#   
+#   sum(d2$Vehic==1) #1833
+#   sum(d2$Vehic==2) #2496/4329
+# }
+
+set.seed(3)
+
+##Realizamos la imputación
+for(i in 1:nrow(d1)){
+  d1$Seg_Loc[i] <- ifelse(d1$Seg_Loc[i]==9,rbernoulli(1,815/1077)+1,d1$Seg_Loc[i])
+  d1$Seg_Mun[i] <- ifelse(d1$Seg_Mun[i]==9,rbernoulli(1,937/1079)+1, d1$Seg_Mun[i])
+  d1$Alum[i] <- ifelse(d1$Alum[i]==9,rbernoulli(1,447/1082)+1,d1$Alum[i])
+  d1$Agua[i] <- ifelse(d1$Agua[i]==9,rbernoulli(1,506/1082)+1,d1$Agua[i])
+  d1$Pandill[i] <- ifelse(d1$Pandill[i]==9,rbernoulli(1,595/1063)+1,d1$Pandill[i])
+  d1$Robos[i] <- ifelse(d1$Robos[i]==9,rbernoulli(1,142/1079)+1,d1$Robos[i])
+  d1$Del_Esc[i] <- ifelse(d1$Del_Esc[i]==9,rbernoulli(1,351/888)+1,d1$Del_Esc[i])
+  d1$Mas_Op_Del[i] <- ifelse(d1$Mas_Op_Del[i]==9,rbernoulli(1,504/805)+1,d1$Mas_Op_Del[i])
+  d1$Mas_Pat_Vil[i] <- ifelse(d1$Mas_Pat_Vil[i]==9,rbernoulli(1,518/883)+1,d1$Mas_Pat_Vil[i])
+  d1$Vehic[i] <- ifelse(d1$Vehic[i]==9,rbernoulli(1,656/1081)+1,d1$Vehic[i])
+}
+
+for (i in 1:nrow(d2)){
+  d2$Seg_Loc[i] <- ifelse(d2$Seg_Loc[i]==9,rbernoulli(1,2802/4319)+1,d2$Seg_Loc[i])
+  d2$Seg_Mun[i] <- ifelse(d2$Seg_Mun[i]==9,rbernoulli(1,3387/4310)+1,d2$Seg_Mun[i])
+  d2$Alum[i] <- ifelse(d2$Alum[i]==9,rbernoulli(1,2190/4325)+1,d2$Alum[i])
+  d2$Agua[i] <- ifelse(d2$Agua[i]==9,rbernoulli(1,2299/4329)+1,d2$Agua[i])
+  d2$Pandill[i] <- ifelse(d2$Pandill[i]==9,rbernoulli(1,2943/4280)+1,d2$Pandill[i])
+  d2$Robos[i] <- ifelse(d2$Robos[i]==9,rbernoulli(1,1068/4296)+1,d2$Robos[i])
+  d2$Del_Esc[i] <- ifelse(d2$Del_Esc[i]==9,rbernoulli(1,1941/3481)+1,d2$Del_Esc[i])
+  d2$Mas_Op_Del[i] <- ifelse(d2$Mas_Op_Del[i]==9,rbernoulli(1,2226/3214)+1,d2$Mas_Op_Del[i])
+  d2$Mas_Pat_Vil[i] <- ifelse(d2$Mas_Pat_Vil[i]==9,rbernoulli(1,1934/3657)+1,d2$Mas_Pat_Vil[i])
+  d2$Vehic[i] <- ifelse(d2$Vehic[i]==9,rbernoulli(1,2496/4329)+1,d2$Vehic[i])
+}
+
+##Juntamos las 2 tablas
+#CData_CDMX <- as.data.frame(resample(rbind(d1,d2), c(1:5419)))
+CData_CDMX <- rbind(d1,d2)
+
+##Categorizamos con factores las columnas correspondientes
+CData_CDMX$Nom_Mun <- as_factor(CData_CDMX$Nom_Mun)
+CData_CDMX$Sexo <- as_factor(CData_CDMX$Sexo)
+CData_CDMX$Niv_Edu <- as_factor(CData_CDMX$Niv_Edu)
+CData_CDMX$Sit_Lab_Act <- as_factor(CData_CDMX$Sit_Lab_Act)
+CData_CDMX$Pos_OCup <- as_factor(CData_CDMX$Pos_OCup)
+CData_CDMX$Imp_Seg <- as_factor(CData_CDMX$Imp_Seg)
+CData_CDMX$Seg_Loc <- as_factor(CData_CDMX$Seg_Loc)
+CData_CDMX$Seg_Mun <- as_factor(CData_CDMX$Seg_Mun)
+CData_CDMX$Alum <- as_factor(CData_CDMX$Alum)
+CData_CDMX$Agua <- as_factor(CData_CDMX$Agua)
+CData_CDMX$Pandill <- as_factor(CData_CDMX$Pandill)
+CData_CDMX$Robos <- as_factor(CData_CDMX$Robos)
+CData_CDMX$Del_Esc <- as_factor(CData_CDMX$Del_Esc)
+CData_CDMX$Mas_Op_Del <- as_factor(CData_CDMX$Mas_Op_Del)
+CData_CDMX$Mas_Pat_Vil <- as_factor(CData_CDMX$Mas_Pat_Vil)
+CData_CDMX$Vehic <- as_factor(CData_CDMX$Vehic)
+
+##Sacamos la correlacion general
+sum_fin <- summary(Data_CDMX2)
+au_1 <- hetcor(Data_CDMX2)
+au2_1 <- au_1$correlations
+corrplot(au2_1)
+```
+Se puede apreciar una fuerte correlación entre las variables Seg_Loc, Seg_Mun, Alum, Agua, Pandill, Robos y Del_Esc. Esto tiene sentido pues, además de que provienen de la misma sección de la encuesta, se puede suponer por las últimas el tipo de localidad en la que vive el encuestado, y a partir de esto, es sencillo deducir cómo son las condiciones de seguridad de la zona.De esta forma, por el fuerte vínculo entre las covariables es por lo que se decidió quedar solamente con la percepción de la seguridad en su alcaldía, pues al final es por esta categoría que se tienen identificados en otra covariable.
+
+Otras covariables que cuentan con un fuerte vínculo son Pos_Ocup y Sit_Lab_Act. Esto es debido a que en las respuestas en situación laboral se encuentran divididas de tal forma que se identifiquen a aquellos que trabajen dentro de las primeras opciones y a los que no en las posteriores; en el caso de Pos_Ocup, las primeras opciones están relacionadas a que trabajen y la última a que no lo hacen. En este caso, se decidió sólo considerar la covariable de Sit_Lab_Act, pues así se tiene una mejor noción del tipo de responsabilidades que tiene la persona y la exposición que tienen a ser asaltados o robados.
+
+Existen otras covariables que parecen poseer una correlación significativa, pero en esos casos no se logró dar una razón clara por la cual sólo elegir una de ellas, de tal forma que conservamos el resto.
+
+Una vez realizada la nueva selección de covariables, se obtiene el siguiente correlograma.
+
+```{r, out.width = '4in'}
+##Quitamos variables que se representaran lo mismo en el modelo
+CData_CDMX1 <- CData_CDMX %>% 
+  select(-Pos_OCup,-Seg_Loc,-Alum,-Agua,-Pandill,-Robos,-Del_Esc,-Mas_Op_Del)
+
+Data_C <- Data_CDMX2 %>% 
+  select(-Pos_OCup,-Seg_Loc,-Alum,-Agua,-Pandill,-Robos,-Del_Esc,-Mas_Op_Del)
+
+au <- hetcor(Data_C)
+au2 <- au$correlations
+corrplot(au2)
+```
+El siguiente tema a abordar es la imputación de datos. Esto es necesario, pues si se eliminaran todas las observaciones en que se respondió de forma "desconocida" o no aplicable para un modelo, se estaría eliminando aproximadamente el 20% de las observaciones y con ello causando un sesgo importante. La imputación realizada consiste en sustituir las respuestas no informativas para el estudio por aquéllas que sí lo sean tomando en cuenta la proporción de cada respuesta útil con respecto a nuestra variable respuesta y de esta forma evitar un sesgo en cuanto a la correlación con respecto a ésta y con el resto de covariables.
+
+Una vez realizada la imputación, se hace presente este correlograma:
+
+```{r}
+au <- hetcor(CData_CDMX1)
+au2 <- au$correlations
+corrplot(au2)
+```
+
+Se observó que efectivamente no se ha afectado de manera notoria a la relación que tenían las covariables entre sí y de éstas con la variable respuesta.
+
+A la hora de la realización de los modelos ajustados, se presentan algunas covariables que sería útil categorizar de otra forma para una mejor interpretación. Dichas covariables son: Nom_Mun, Niv_Edu, Sit_Lab_Act. A su vez, se decidió eliminar las variables "sexo" y "vehic" pues no presentaban relevancia para la variable respuesta. Finalmente, llegamos a nuestro último correlograma, que se muestra a continuación.
+
+```{r}
+# Eliminamos sexo y agrupamos las alcald?as, niveles educativos y situaci?n laboral
+Region <- rep(0,length(CData_CDMX1$Nom_Mun))
+for(i in 1:length(CData_CDMX1$Nom_Mun)){
+  if(CData_CDMX1$Nom_Mun[i] %in% c("Gustavo A. Madero","Venustiano Carranza","Iztacalco")){
+    Region[i] <- "Norte"
+  }else if(CData_CDMX1$Nom_Mun[i] %in% c("Cuauhtemoc","Miguel Hidalgo","Azcapotzalco","Alvaro Obregon","Cuajimalpa de Morelos")){
+    Region[i] <- "Centro Poniente"
+  }else if(CData_CDMX1$Nom_Mun[i] %in% c("Benito Juarez","Coyoacan","Tlalpan","La Magdalena Contreras")){
+    Region[i] <- "Sur"
+  }else if(CData_CDMX1$Nom_Mun[i] %in% c("Iztapalapa","Tlahuac","Xochimilco","Milpa Alta")){
+    Region[i] <- "Oriente"
+  }
+}
+
+Nivel_Edu <- rep("",length(CData_CDMX1$Niv_Edu))
+for(i in 1:length(CData_CDMX1$Niv_Edu)){
+  if(CData_CDMX1$Niv_Edu[i] %in% c(0,1,2)){
+    Nivel_Edu[i]<-"No Básica"
+  }else if(CData_CDMX1$Niv_Edu[i] %in% c(3,4,5)){
+    Nivel_Edu[i]<-"Secundaria"
+  }else if(CData_CDMX1$Niv_Edu[i] %in% c(6,7)){
+    Nivel_Edu[i]<-"Medio Superior"
+  }else if(CData_CDMX1$Niv_Edu[i] == 8){
+    Nivel_Edu[i]<-"Superior"
+  }else if(CData_CDMX1$Niv_Edu[i] == 9){
+    Nivel_Edu[i]<-"Posgrado"
+  }
+}
+
+Sit_Lab <- rep("",length(CData_CDMX1$Sit_Lab_Act))
+for(i in 1:length(CData_CDMX1$Sit_Lab_Act)){
+  if(CData_CDMX1$Sit_Lab_Act[i] %in% c(1,2,3)){
+    Sit_Lab[i] <- "Empleado"
+  }else if(CData_CDMX1$Sit_Lab_Act[i] %in% c(4,5)){
+    Sit_Lab[i] <- "Estudiantes y Domésticos"
+  }else if(CData_CDMX1$Sit_Lab_Act[i] %in% c(6,7,8)){
+    Sit_Lab[i] <- "Sin Ocupación"
+  }
+}
+
+CData_CDMX2 <- CData_CDMX1 %>% 
+  select(-Sexo, -Nom_Mun, -Niv_Edu, -Sit_Lab_Act, -Vehic) %>% 
+  mutate(Region =Region, Nivel_Edu=Nivel_Edu, Sit_Lab = Sit_Lab)
+CData_CDMX2$Region <- as_factor(CData_CDMX2$Region)
+CData_CDMX2$Nivel_Edu <- factor(CData_CDMX2$Nivel_Edu,levels=c("No Básica","Secundaria","Medio Superior","Superior","Posgrado"),ordered = T)
+CData_CDMX2$Sit_Lab <- as_factor(CData_CDMX2$Sit_Lab)
+
+au <- hetcor(CData_CDMX2)
+au2 <- au$correlations
+corrplot(au2)
+
+CData_CDMX3 <- CData_CDMX2 %>% 
+  mutate(Vic_Rob_As = ifelse(Vic_Rob_As>0,1,0))
+CData_CDMX3$Vic_Rob_As <- as_factor(CData_CDMX3$Vic_Rob_As)
+```
+
+# Análisis Descriptivo
+
+En esta sección se analizarán las variables que se conservaron, lo que ayudará a conocer mejor la base. 
+
+Se tienen dos variables respuestas. La primera es la cantidad de personas que han sido robadas o asaltadas, mientras que la segunda es la cantidad de veces que las personas fueron víctimas de estos delitos. La composición de ambas variables puede ser vista en las siguientes gráficas:
+
+```{r}
+CData_CDMX3_1 <- CData_CDMX3 %>% 
+  mutate(Vic_Rob_As = as_factor(ifelse(Vic_Rob_As == 1,"Sí", "No")),
+         Seg_Mun = as_factor(ifelse(Seg_Mun == 1,"Sí", "No")),
+         Imp_Seg = as_factor(ifelse(Imp_Seg == 1, "Sí", "No")),
+         Mas_Pat_Vil = as_factor(ifelse(Mas_Pat_Vil == 1, "Sí","No")))
+
+CData_CDMX2_1 <- CData_CDMX2 %>% 
+  mutate(Seg_Mun = as_factor(ifelse(Seg_Mun == 1,"Sí", "No")),
+         Imp_Seg = as_factor(ifelse(Imp_Seg == 1, "Sí", "No")),
+         Mas_Pat_Vil = as_factor(ifelse(Mas_Pat_Vil == 1, "Sí","No")))
+
+graf1 <- CData_CDMX3_1 %>%
+  ggplot() +
+  geom_bar(aes(x = Vic_Rob_As), fill ="#00B8C2") + theme_bw() + ylab("Personas") + xlab("Víctima de Robo/Asalto")
+
+graf2 <- CData_CDMX2 %>%
+  ggplot() +
+  geom_bar(aes(x = Vic_Rob_As), fill ="#00B8C2") + theme_bw() + ylab("Personas") + xlab("Número de Robos/Asaltos")
+
+ggarrange(graf1, graf2)
+```
+
+Se puede destacar que en ambas variables respuesta, el número de observaciones relacionadas a la presencia nula de siniestros tiene una proporción mayor a aquéllas donde la persona fue víctima de robos y/o asaltos. Igualmente, se observa que una vez que condicionamos a que la persona haya sufrido un altercado, hay una probabilidad muy alta de que sólo haya sido una vez a que haya sido múltiples veces.
+
+La primera covariable a analizar es la edad.
+
+```{r}
+# Gráfica Edad
+graf3 <- CData_CDMX2 %>% group_by(Edad) %>% summarise(TotalDelitos = sum(Vic_Rob_As)) %>% 
+  ggplot(aes(x = Edad, y = TotalDelitos, color = Edad, fill = Edad)) +
+  geom_bar(stat = "identity") + theme_bw()
+
+graf4 <- ggplot(CData_CDMX3_1, aes(x = as_factor(Vic_Rob_As) , y = Edad)) +
+  geom_boxplot(fill = "#6562C9") +
+  xlab("Víctima de Robo/Asalto") + ylab("Edad") + theme_bw()
+
+ggarrange(graf3, graf4)
+```
+
+Se notó es que, a medida que se llega a edades donde la persona probablemente se encuentre jubilada, retirada o en condiciones no aptas para seguir trabajando, hay una disminución en la cantidad de robos y asaltos que esta sufre. En cambio, en edades en que la persona se encuentra dentro del sector de la población económicamente activa, se sigue una tendencia relativamente uniforme de siniestros.
+
+Como segunda covariable se tiene la respuesta a la pregunta de si la persona considera segura su alcaldía o no. 
+
+```{r}
+# Por seguridad de la alcaldía
+graf5 <- as_tibble(xtabs(~ Seg_Mun + Vic_Rob_As , data = CData_CDMX3_1)) %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Seg_Mun), stat = "identity", color = "black", position = position_dodge()) +
+  xlab("Víctima de Robo/Asalto") + ylab("Personas") + labs(fill = "Alcaldía Segura") + theme_bw() + scale_fill_manual(values = c("#00B8C2","#6562C9"))
+
+graf6 <- as_tibble(xtabs(~ Seg_Mun + Vic_Rob_As , data = CData_CDMX2_1)) %>% ggplot() +
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Seg_Mun), stat = "identity", color = "black", position = position_dodge()) +
+  xlab("Número de Robos/Asaltos") + ylab("Personas") + labs(fill = "Alcaldía Segura") + theme_bw() + scale_fill_manual(values = c("#00B8C2","#6562C9"))
+
+ggarrange(graf5, graf6)
+```
+
+Como era de esperarse, se nota el efecto de que consideren su alcaldía más segura  aquellas personas que no han sufrido algún altercado.
+
+Como tercera covariable se tiene la respuesta a la pregunta de si la persona percibió un intento por parte de su gobierno local por incrementar la cantidad de patrullas de vigilacia en la zona. 
+
+```{r}
+# Gráfica por Mas_Pat_Vil = Mas Patrullas Vigilando
+graf7 <- as_tibble(xtabs(~ Mas_Pat_Vil + Vic_Rob_As, data = CData_CDMX3_1)) %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Mas_Pat_Vil), stat = "identity", color = "black", position = position_dodge()) +
+  xlab("Víctima de Robo/Asalto") + ylab("Personas") + labs(fill = "Más Patrullas") + theme_bw() + scale_fill_manual(values = c("#00B8C2","#6562C9"))
+
+graf8 <- as_tibble(xtabs(~ Mas_Pat_Vil + Vic_Rob_As, data = CData_CDMX2_1)) %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Mas_Pat_Vil), stat = "identity", color = "black", position = position_dodge()) +
+  xlab("Número de Robos/Asaltos") + ylab("Personas") + labs(fill = "Más Patrullas") + theme_bw() + scale_fill_manual(values = c("#00B8C2","#6562C9"))
+
+ggarrange(graf7, graf8)
+```
+
+A pesar de no notar un cambio evidente en la proporción de asaltos en aquellas localidades donde se observó un aumento en las patrullas de vigilancia, al momento de incluirla como covariable en los modelos se notó que sí tenía relevancia. Esta es la razón por la que se conservó esta covariable. 
+
+Inicialmente se contaba con la covariable de la alcaldía en donde se residía, sin embargo, al tenerla de esta forma, la influencia de esta covariable en los modelos no era significativa en lo absoluto. Como consecuencia, se decidió agrupar a las alcaldías como lo realiza la misma ENVIPE, que es por zona geográfica. 
+
+```{r}
+# Gráfica por Región
+x <- c("Centro Poniente", "Sur", "Norte", "Oriente")
+y <- c(dim(CData_CDMX2 %>% filter(Region == "Centro Poniente"))[1],
+       dim(CData_CDMX2 %>% filter(Region == "Sur"))[1],
+       dim(CData_CDMX2 %>% filter(Region == "Norte"))[1],
+       dim(CData_CDMX2 %>% filter(Region == "Oriente"))[1]
+       )
+
+z <- c(dim(CData_CDMX2 %>% filter(Region == "Centro Poniente"))[1],
+       dim(CData_CDMX2 %>% filter(Region == "Sur"))[1],
+       dim(CData_CDMX2 %>% filter(Region == "Norte"))[1],
+       dim(CData_CDMX2 %>% filter(Region == "Oriente"))[1]
+)
+
+Datos_Tasas <- CData_CDMX2 %>% dplyr::group_by(Region) %>% 
+  summarise(TotalDelitos = sum(Vic_Rob_As))
+
+Tasas <- rep(0,4)
+for (i in 1:4) {
+  aux1 <- CData_CDMX2 %>% filter(Region == Datos_Tasas$Region[i])
+  Tasas[i] <- length(aux1$Vic_Rob_As)
+}
+
+Total_Rob <- Datos_Tasas$TotalDelitos
+
+Datos_Tasas <- tibble(Datos_Tasas, Total_Rob = signif(Tasas, digits = 4))
+
+Datos_Rob_Total <- tibble(Indicador = rep(c("Población Encuestada", "Población Siniestrada"), each = 4),
+                                              Region = rep(x, 2), Valores = c(z,Total_Rob))
+Datos_Rob_Total %>% 
+  ggplot(aes(x = Region, y = Valores, fill = Indicador)) +
+  geom_bar(stat = "identity", color = "black", position = position_dodge()) +
+  labs(x = NULL, y = NULL, fill = NULL)  + theme_bw() + scale_fill_manual(values = c("#00B8C2","#6562C9"))+ xlab("Región") + ylab("Personas") 
+```
+
+En las gráficas es posible ver que los habitantes de la región Centro Poniente y Oriente suelen estar más afectados a comparación de las regiones Norte y Sur.
+
+
+Como siguiente covariable, se considera el máximo nivel educativo en el cual se desempeñó el encuestado. 
+
+```{r}
+# Gráfica por Nivel Academico
+graf9 <- as_tibble(xtabs(~ Vic_Rob_As + Nivel_Edu , data = CData_CDMX2 %>% filter(Vic_Rob_As <= 1)))%>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = sort(Nivel_Edu)), stat = "identity", color = "black", position = position_dodge()) +
+  xlab("Víctima de Robo/Asalto") + ylab("Personas") + labs(fill = "Nivel Educativo") + theme_bw() + scale_fill_manual(values = c("#00B8C2","#6562C9", "#254DBC","#BABC25", "#25BC76"))
+
+graf10 <- as_tibble(xtabs(~ Vic_Rob_As + Nivel_Edu , data = CData_CDMX2 %>% filter(Vic_Rob_As > 1)))%>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = sort(Nivel_Edu)), stat = "identity", color = "black", position = position_dodge()) +
+  xlab("Víctima de Robo/Asalto") + ylab("Personas") + labs(fill = "Nivel Educativo") + theme_bw() + scale_fill_manual(values = c("#00B8C2","#6562C9", "#254DBC","#BABC25", "#25BC76"))
+
+ggarrange(graf9, graf10)
+```
+
+Se puede observar que los que han estudiado un posgrado suelen ser asaltados más veces en comparación. Por su parte, los encuestados que hayan llegado a niveles No-Básico y Secundaria suelen mantenerse similares.
+
+
+En la covariable Situación Laboral Actual, se agruparon de esta forma las categorías al suponerse que los trabajadores serían los más afectados. Al contrario de los de Sin Ocupación, que presentarían menor riesgo. Mientras que los Estudiantes y Domésticos tendrían un riesgo medio porque tienen que salir constantemente a la calle, pero no suelen llevar tanto dinero consigo. 
+
+```{r}
+# Gráfica por Situación Laboral
+graf11 <- as_tibble(xtabs(~ Vic_Rob_As + Sit_Lab , data = CData_CDMX3_1))  %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Sit_Lab), stat = "identity", color = "black", position = position_dodge()) + 
+  xlab("Víctima de Robo/Asalto") + ylab("Personas") + labs(fill = "Situación Laboral") + theme_bw() + scale_fill_manual(values = pal)
+
+graf12 <- as_tibble(xtabs(~ Vic_Rob_As + Sit_Lab , data = CData_CDMX2_1))  %>% ggplot() + 
+  geom_bar(aes(x=Vic_Rob_As, y = n, fill = Sit_Lab), stat = "identity", color = "black", position = position_dodge()) + 
+  xlab("Número de Robos/ Asaltos") + ylab("Personas") + labs(fill = "Situación Laboral") + theme_bw() + scale_fill_manual(values = pal)
+
+ggarrange(graf11, graf12)
+```
+
+
+
+
+# Modelo Logit
+
+El modelo logístico es 
+Se decidió implementar un modelo logit para estimar únicamente la probabilidad de que a una persona la asalten. 
+
+<!-- Modelo 1 -->
+```{r}
+##Creamos base con respuesta 1 y 0
+CData_CDMX3 <- CData_CDMX2 %>% 
+  mutate(Vic_Rob_As = ifelse(Vic_Rob_As>0,1,0))
+CData_CDMX3$Vic_Rob_As <- as_factor(CData_CDMX3$Vic_Rob_As)
+
+## Primer modelo con todas las covariables
+modlog1 <- glm(Vic_Rob_As ~ .,family = "binomial", data=CData_CDMX3)
+smod1 <- summary(modlog1) #AIC = 5108.8
+
+## Hallamos punto de corte gr?fica y te?ricamente
+predictions1 <- prediction(modlog1$fitted.values,CData_CDMX3$Vic_Rob_As)
+
+# plot(unlist(performance(predictions1, "sens")@x.values), unlist(performance(predictions1, "sens")@y.values),
+#      type="l", lwd=2, ylab="Sensitivity", xlab="Punto de Corte")
+# par(new=TRUE)
+# plot(unlist(performance(predictions1, "spec")@x.values), unlist(performance(predictions1, "spec")@y.values),
+#      type="l", lwd=2, col='red', ylab="", xlab="")
+
+rest1 <- abs(unlist(performance(predictions1, "sens")@y.values)-unlist(performance(predictions1, "spec")@y.values))
+opt1 <- unlist(performance(predictions1, "sens")@x.values)[which(rest1==min(rest1))]
+
+##Checamos multicolinealidad
+# vif(modlog1)
+
+#Matriz de Confusión
+r1 <- ifelse(modlog1$fitted.values>=opt1,1,0)
+t1 <- table(r1,CData_CDMX3$Vic_Rob_As)  ###62.32%
+
+set.seed(3)
+vec1 <- rbinom(length(modlog1$fitted.values),1,modlog1$fitted.values)
+ts1 <- table(vec1,CData_CDMX3$Vic_Rob_As) ###70.05%
+```
+
+<!-- Modelo 2 -->
+```{r}
+## Modelo Sin Importancia de la Seguridad
+modlog2 <- glm(Vic_Rob_As ~ Edad + Sit_Lab + Seg_Mun + Mas_Pat_Vil + Nivel_Edu + Region, family = "binomial",data=CData_CDMX3)
+smod2 <- summary(modlog2) #AIC: 5109.6
+fittedfrec <- modlog2$fitted.values 
+
+#Punto de Corte
+predictions2 <- prediction(modlog2$fitted.values,CData_CDMX3$Vic_Rob_As)
+
+# plot(unlist(performance(predictions2, "sens")@x.values), unlist(performance(predictions2, "sens")@y.values),
+#      type="l", lwd=2, ylab="Sensitivity", xlab="Punto de Corte")
+# par(new=TRUE)
+# plot(unlist(performance(predictions2, "spec")@x.values), unlist(performance(predictions2, "spec")@y.values),
+#      type="l", lwd=2, col='red', ylab="", xlab="")
+
+rest2 <- abs(unlist(performance(predictions2, "sens")@y.values)-unlist(performance(predictions2, "spec")@y.values))
+opt2 <- unlist(performance(predictions2, "sens")@x.values)[which(rest2==min(rest2))]
+
+#Multicolinealidad
+# vif(modlog2)
+
+r2 <- ifelse(modlog2$fitted.values>=opt2,1,0)
+t2 <- table(r2,CData_CDMX3$Vic_Rob_As)  ###61.88%
+
+##Distancias de Cook
+# cooks.distance(modlog2)
+# plot(modlog2,4)
+
+# outlierTest(modlog2)
+
+set.seed(3)
+vec2 <- rbinom(length(modlog2$fitted.values),1,modlog2$fitted.values)
+ts2 <- table(vec2,CData_CDMX3$Vic_Rob_As) ###70.05%
+```
+
+<!-- Modelo 3 -->
+```{r}
+##Tercer modelo sin Imp_seg y Niv_Edu
+modlog3 <- glm(Vic_Rob_As ~ Edad + Sit_Lab + Seg_Mun + Mas_Pat_Vil + Region, family = "binomial",data=CData_CDMX3)
+smod3 <- summary(modlog3) 
+
+#Punto de Corte
+predictions3 <- prediction(modlog3$fitted.values,CData_CDMX3$Vic_Rob_As)
+
+# plot(unlist(performance(predictions3, "sens")@x.values), unlist(performance(predictions3, "sens")@y.values),
+#      type="l", lwd=2, ylab="Sensitivity", xlab="Punto de Corte")
+# par(new=TRUE)
+# plot(unlist(performance(predictions3, "spec")@x.values), unlist(performance(predictions3, "spec")@y.values),
+#      type="l", lwd=2, col='red', ylab="", xlab="")
+
+rest3 <- abs(unlist(performance(predictions3, "sens")@y.values)-unlist(performance(predictions3, "spec")@y.values))
+opt3 <- unlist(performance(predictions3, "sens")@x.values)[which(rest3==min(rest3))]
+
+#Multicolinealidad
+# vif(modlog3)
+
+r3 <- ifelse(modlog3$fitted.values>=opt3,1,0)
+t3 <- table(r3,CData_CDMX3$Vic_Rob_As)  ###61.88%
+
+set.seed(3)
+vec3 <- rbinom(length(modlog3$fitted.values),1,modlog3$fitted.values)
+ts3 <- table(vec3,CData_CDMX3$Vic_Rob_As) ###70.05%
+
+```
+
+<!-- Tabla de los modelos -->
+```{r}
+comp_tib_l <- tibble(Modelo=c("Modelo Completo", "Modelo 1", "Modelo 2"),
+                   AIC=c(smod1$aic, smod2$aic, smod3$aic),
+                   "Punto de Corte" = c(opt1, opt2, opt3),
+                   "Efectividad Clásica" = c(round((t1[1,1]+t1[2,2])/5417*100,2), round((t2[1,1]+t2[2,2])/5417*100,2), round((t3[1,1]+t3[2,2])/5417*100,2)),
+                   "Efectividad Simulada" = c(round((ts1[1,1]+t1[2,2])/5417*100,2), round((ts2[1,1]+t2[2,2])/5417*100,2), round((ts3[1,1]+t3[2,2])/5417*100,2)))
+
+kable(comp_tib_l)
+```
+
+
+```{r, figures-side, fig.show='hold', out.width="25%", fig.cap= ""}
+
+## Código JAGS
+data <- list(
+  y = as.numeric(CData_CDMX3$Vic_Rob_As)-1,
+  X1 = CData_CDMX3$Edad,
+  X2 = as.numeric(CData_CDMX3$Sit_Lab),
+  X3 = CData_CDMX3$Seg_Mun,
+  X4 = CData_CDMX3$Mas_Pat_Vil,
+  X5 = as.numeric(CData_CDMX3$Nivel_Edu),
+  X6 = as.numeric(CData_CDMX3$Region),
+  n = nrow(CData_CDMX3)
+)
+
+
+param <- c("alpha","beta1", "beta2", "beta3","beta4","beta5","beta6")
+
+inits<-function(){list(
+  "alpha" = rnorm(1),
+  "beta1" = rnorm(1)
+)
+}
+
+#fit <- jags.model("Modelo.bug", data, inits, n.chains=3)
+#update(fit,1000)
+#sample <- coda.samples(fit,param,n.iter = 2000,thin =2)
+
+load("sampleCC.Rdata")
+
+par(mfrow=c(2,3))
+plot(sample[,1])
+mtext("Intercepto",side = 3,line = - 2, outer = TRUE)
+plot(sample[,2])
+mtext("Edad",side = 3,line = - 2, outer = TRUE)
+plot(sample[,4])
+mtext("Sit_Lab_Sin",side = 3,line = - 2, outer = TRUE)
+plot(sample[,5])
+mtext("Sit_Lab_Est",side = 3,line = - 2, outer = TRUE)
+plot(sample[,7])
+mtext("Seg_Mun2",side = 3,line = - 2, outer = TRUE)
+plot(sample[,9])
+mtext("Mas_Pat_Vil2",side = 3,line = - 2, outer = TRUE)
+
+ssample <- summary(sample)
+betas <- ssample[[1]][,1]
+```
+
+```{r, figures-side2, fig.show='hold', out.width="25%"}
+par(mfrow=c(3,2))
+plot(sample[,11])
+mtext("Nivel_Edu_Sec",side = 3,line = - 2, outer = TRUE)
+plot(sample[,12])
+mtext("Nivel_Edu_Med_Sup",side = 3,line = - 2, outer = TRUE)
+plot(sample[,13])
+mtext("Nivel_Edu_Sup",side = 3,line = - 2, outer = TRUE)
+plot(sample[,14])
+mtext("Nivel_Edu_Pos",side = 3,line = - 2, outer = TRUE)
+plot(sample[,16])
+mtext("Region_Sur",side = 3,line = - 2, outer = TRUE)
+plot(sample[,17])
+mtext("Region_Norte",side = 3,line = - 2, outer = TRUE)
+plot(sample[,18])
+mtext("Region_Oriente",side = 3,line = - 2, outer = TRUE)
+```
+
+
+<!-- Coeficientes Clásico vs Bayesiano -->
+```{r}
+comp_tib_lc <- tibble(Variables=c("Intercepto", "Edad", "Sit_Lab_Sin-Oc", "Sit_Lab_Est-Dom", 
+                                  "Seg_Mun_2", "Mas_Pat_Vil_2", "Nivel_Edu_Sec", "Nivel_Edu_Med-Sup",
+                                  "Nivel_Edu_Sup", "Nivel_Edu_Pos", "Region_Sur", "Region_Norte",
+                                  "Region_Oriente"),
+                     "Clásico"=c(round(smod2$coefficients[1,1],3),round(smod2$coefficients[2,1],3),
+                               round(smod2$coefficients[3,1],3),round(smod2$coefficients[4,1],3),
+                               round(smod2$coefficients[5,1],3),round(smod2$coefficients[6,1],3),
+                               round(smod2$coefficients[7,1],3),round(smod2$coefficients[8,1],3),
+                               round(smod2$coefficients[9,1],3),round(smod2$coefficients[10,1],3),
+                               round(smod2$coefficients[11,1],3),round(smod2$coefficients[12,1],3),
+                               round(smod2$coefficients[13,1],3)),
+                     Bayesiano=c(round(betas[1],3), round(betas[2],3), round(betas[4],3), round(betas[5],3),
+                                 round(betas[7],3), round(betas[9],3), round(betas[11],3), round(betas[12],3),
+                                 round(betas[13],3), round(betas[14],3), round(betas[16],3), round(betas[17],3),
+                                 round(betas[18],3)))
+
+kable(comp_tib_lc)
+```
+
+
+
+
+
+## Ejemplo
+
+A continuación, a modo de ejemplo gráfico, se quiso considerar a todas las personas con las siguientes características específicas: personas de 22 años que sean estudiantes de licenciatura o que ya la hayan concluido, pero sin haber iniciado cursos posteriores.
+
+De esta forma, consideramos todas las posibles combinaciones de las demás covariables no especificadas y obtuvimos los valores ajustados de las probabilidades tanto para el modelo clásico como para el bayesiano. De igual manera, realizamos simulaciones con las probabilidades estimadas de ambos modelos considerando las observaciones reales en cada subconjunto y se decidió comparar con los datos reales de la encuesta. Así, llegamos al siguiente resultado.
+
+```{r}
+##Preparamos datos para ejemplos
+betas1<-smod2$coefficients[,1]
+
+#Tabla ocupada para el bayesiano
+CData_CDMX4 <- CData_CDMX3 %>%
+  mutate(Empleado = ifelse(Sit_Lab == "Empleado",1,0), SinOcup = ifelse(Sit_Lab == "Sin Ocupación",1,0),
+         EstDom = ifelse(Sit_Lab == "Estudiantes y Domésticos",1,0), CP = ifelse(Region == "Centro Poniente",1,0),
+         S = ifelse(Region == "Sur",1,0), N = ifelse(Region == "Norte",1,0), O = ifelse(Region == "Oriente",1,0),
+         NB = ifelse(Nivel_Edu == "No Básica",1,0), Sec =ifelse(Nivel_Edu == "Secundaria",1,0),
+         MS = ifelse(Nivel_Edu == "Medio Superior",1,0), Sup = ifelse(Nivel_Edu == "Superior",1,0),
+         Pos = ifelse(Nivel_Edu == "Posgrado",1,0), Seg = ifelse(Seg_Mun == 1,1,0), NoSeg = ifelse(Seg_Mun ==2,1,0),
+         Mas = ifelse(Mas_Pat_Vil == 1,1,0), NoMas = ifelse(Mas_Pat_Vil == 2,1,0), Alpha = 1) %>%
+  select(Alpha, Edad, Empleado, SinOcup, EstDom, Seg, NoSeg, Mas, NoMas, NB, Sec, MS, Sup, Pos, CP, S, N, O)
+
+# Tabla ocupada oara el frecuentista
+CData_CDMX6 <- CData_CDMX4 %>% 
+  select(-Empleado,-Seg,-Mas,-NB,-CP)
+
+# obtenemos los elementos que cumplen nuestras características pedidas
+Ejemplo2_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==0, S==0, N==0, O ==0)
+Ejemplo4_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==1, S==0, N==0, O ==0)
+Ejemplo6_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==0, S==0, N==1, O ==0)
+Ejemplo8_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==1, S==0, N==1, O ==0)
+Ejemplo9_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==0, NoMas ==0, S==1, N==0, O ==0)
+Ejemplo10_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==0, S==1, N==0, O ==0)
+Ejemplo12_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==1, S==1, N==0, O ==0)
+Ejemplo14_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==0, S==0, N==0, O ==1)
+Ejemplo16_1 <- CData_CDMX6 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==1, S==0, N==0, O ==1)
+
+Ejemplo2_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==0, S==0, N==0, O ==0)
+Ejemplo4_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==1, S==0, N==0, O ==0)
+Ejemplo6_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==0, S==0, N==1, O ==0)
+Ejemplo8_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==1, S==0, N==1, O ==0)
+Ejemplo9_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==0, NoMas ==0, S==1, N==0, O ==0)
+Ejemplo10_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==0, S==1, N==0, O ==0)
+Ejemplo12_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==1, S==1, N==0, O ==0)
+Ejemplo14_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==0, S==0, N==0, O ==1)
+Ejemplo16_12 <- CData_CDMX4 %>% 
+  filter(Edad == 22, EstDom == 1, Sup == 1, NoSeg ==1, NoMas ==1, S==0, N==0, O ==1)
+
+## Comprobamos el contar con los mismos elementos y contamos el número de personas que fueron víctimas
+Ejemplo2 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 2, Mas_Pat_Vil == 1, Region == "Centro Poniente", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+Ejemplo4 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 2, Mas_Pat_Vil == 2, Region == "Centro Poniente", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+Ejemplo6 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 2, Mas_Pat_Vil == 1, Region == "Norte", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+Ejemplo8 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 2, Mas_Pat_Vil == 2, Region == "Norte", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+Ejemplo9 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 1, Mas_Pat_Vil == 1, Region == "Sur", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+Ejemplo10 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 2, Mas_Pat_Vil == 1, Region == "Sur", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+Ejemplo12 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 2, Mas_Pat_Vil == 2, Region == "Sur", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+Ejemplo14 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 2, Mas_Pat_Vil == 1, Region == "Oriente", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+Ejemplo16 <- CData_CDMX3 %>% 
+  filter(Edad == 22, Seg_Mun == 2, Mas_Pat_Vil == 2, Region == "Oriente", Nivel_Edu == "Superior",Sit_Lab == "Estudiantes y Domésticos")
+
+
+
+##Obtenemos los valores ajustados de nuestra probabilidades
+Tabla <- rbind(Ejemplo2_1[1,],Ejemplo4_1[1,],Ejemplo6_1[1,],Ejemplo8_1[1,],Ejemplo9_1[1,],Ejemplo10_1[1,],Ejemplo12_1[1,],Ejemplo14_1[1,],
+               Ejemplo16_1[1,])
+p_i <- rep(0,9)
+for(i in 1:9){
+  exponente <- sum(betas1 * Tabla[i,])
+  p_i[i] <- 1/(1+exp(-exponente))
+}
+
+Tabla1 <- rbind(Ejemplo2_12[1,],Ejemplo4_12[1,],Ejemplo6_12[1,],Ejemplo8_12[1,],Ejemplo9_12[1,],Ejemplo10_12[1,],Ejemplo12_12[1,],Ejemplo14_12[1,],Ejemplo16_12[1,])
+p_i1 <- rep(0,9)
+for(i in 1:9){
+  exponente <- sum(betas1 * Tabla[i,])
+  p_i1[i] <- 1/(1+exp(-exponente))
+}
+
+##Realizamos nuestra simulación
+set.seed(19)
+n_i <-c(1,3,3,5,2,6,1,5,1)
+
+Num <- rep(0,10000)
+for(i in 1:10000){
+  Num[i] <- sum(rbinom(9,n_i,p_i))
+}
+
+Num1 <- rep(0,10000)
+for(i in 1:10000){
+  Num1[i] <- sum(rbinom(9,n_i,p_i1))
+}
+
+## Realizamos nuestra comparación gráficamente
+Reales <- c(rep(0,20),rep(1,7))
+
+Simu <- c(27-sum(mean(Num)),sum(mean(Num)))
+Int1_1 <- seq(from = mean(Num) - sd(Num), to = mean(Num) + sd(Num),length.out = 7)
+Int2_1 <- seq(from = 27-mean(Num) - sd(Num), to = 27 -mean(Num) + sd(Num),length.out = 7)
+
+Simu1 <- c(27-sum(mean(Num1)),sum(mean(Num1)))
+Int1_2 <- seq(from = mean(Num1) - sd(Num1), to = mean(Num) + sd(Num1),length.out = 7)
+Int2_2 <- seq(from = 27-mean(Num1) - sd(Num1), to = 27 -mean(Num1) + sd(Num1),length.out = 7)
+
+ggplot() +
+  geom_histogram(aes(x=Reales),binwidth = 1, col = "black", fill = "#25B7BC") + 
+  geom_point(aes(x=c(-1/6,5/6) , y=Simu), col = "#B225BC", size = 2.8) + geom_point(aes(x=c(1/6,7/6),y=Simu1), col ="#2528BC",size=2.8) +
+  geom_line(aes(x=5/6, y=Int1_1),col = "#B225BC") + geom_line(aes(x=-1/6, y=Int2_1),col = "#B225BC") + geom_line(aes(x=7/6, y=Int1_2),col = "#2528BC") + geom_line(aes(x=1/6, y=Int2_2),col = "#2528BC") +
+  theme_light() + ylab("Casos") + xlab("Robo (1) o No (0)")
+```
+
+Se aprecia que ambos modelos contienen al valor real dentro de sus intervalos de confianza (dado por su desviación estándar), por lo que, a pesar de que la media estuvo un poco alejada del valor real, se tiene una idea de los valores que puede adquirir nuestra variable respuesta. Además, sí se notó una muy leve mejora entre lo obtenido con el modelo bayesiano (azul oscuro) y el modelo clásico (morado), pero ambos funcionan de manera muy similar, pues los valores de los coeficientes obtenidos son demasiado cercanos entre sí.
+
+
+
+# Modelo Poisson Cero Inflado
+
+```{r ZIP ajuste}
+
+CData_CDMX2_sin7 <- CData_CDMX2 %>% filter(Vic_Rob_As < 7)
+mod_ZIPsin7 <- zeroinfl(Vic_Rob_As ~ Seg_Mun  + Region |
+                         Edad + Mas_Pat_Vil + Region + Sit_Lab,
+                       data= CData_CDMX2_sin7, dist="poisson",link="logit")
+
+
+```
+
+
+
+*PARTE DE PABLO*
+
+*Parte de las pruebas*
+
+Para comprobar que es un buen modelo, se realizaron ciertos **tests** y se tomaron en cuenta algunos criterios. Entre ellos, la prueba de la Ji-Cuadrada utilizando las verosimilitudes de un modelo poisson nulo (es decir, solo se toma el intercepto como variable predictiva) contra la de un modelo poisson inflado. Esto ayuda a ver que evidentemente el modelo tiene un mejor ajuste a los datos que si solo se considerara un modelo con ninguna otra covariable (cita).
+
+Por otro lado, también se consideró el Vuong test, ya que este indica si el modelo Poisson Inflado se ajusta mejor que solo considerar una regresión Poisson para el desarrollo del mismo (cita). 
+
+OJO: Creo que aquí hay que anexar la parte de porqué es mejor ajustar un modelo Binomial Negativo, la respuesta es porque no tenemos mucha sobredispersión, ya que la varianza de nuestros datos (`r var(CData_CDMX2$Vic_Rob_As)`) no es mucho más grande que la media de los mismos (`r mean(CData_CDMX2$Vic_Rob_As)`), y el modelo Binomial Negativo se ajusta mejor cuando tenemos mayor sobredispersión (Cita). Pero, si no les convence tanto, aquí hay una página : https://support.sas.com/resources/papers/sgf2008/countreg.pdf
+
+Dichas pruebas se resumen en las siguiente tablas, en donde se muestran los respectivos **p-value** y su interpretación.
+
+```{r pruebas ZIP, include=FALSE}
+############# Ji cuadrada
+mnull <- update(mod_ZIPsin7, . ~ 1) # Modelo Nulo
+pnull <- pchisq(2*(logLik(mod_ZIPsin7) - logLik(mnull)),
+       df = 6, lower.tail = FALSE) # Es estadísticamente significativo
+                                   # que el poisson sin covariables 
+# pchisq(2*(logLik(mod_ZIPsin7) - logLik(mnull)),
+#        df = 5, lower.tail = FALSE) # Es estadísticamente significativo
+#                                    # que el poisson sin covariables
+
+############# Vuong (contra poisson solo)
+mod_PoiSin7 <- glm(Vic_Rob_As ~ Seg_Mun + Region,
+                           family = poisson, data = CData_CDMX2_sin7) ### Poisson solo
+
+vuong(mod_ZIPsin7, mod_PoiSin7) %>%  kable(digits = 4, booktabs = T)# Si e
+
+```
+
+```{r Tablas pruebas ZIP}
+a <- c("Raw", "AIC-corrected", "BIC-corrected")
+Vuong.p <- c("<2.22e-16", "2.8866e-15","3.0909e-11")
+Vuong.inter <- c("ZIP > modelo poisson", "ZIP > modelo poisson", "ZIP > modelo poisson")
+
+
+
+tibble( "p-value" = "3.910882e-86", "Interpretación" = "ZIP > modelo nulo ")  %>% kable(caption = "Ji-cuadrada test con p-values e interpretación", booktabs = T)
+
+tibble(" " = a, "p-value" = Vuong.p, "Interpretación" = Vuong.inter) %>% kable(caption = "Vuong test con p-values e interpretación", booktabs = T)
+
+```
+
+Se puede apreciar que tanto la prueba Ji como el Vuong Test, dieron resultados a favor del modelo ajustado. Es decir, este es estadísticamente significativo mejor que considerar solo el modelo Poisson o utilizar un modelo nulo. De esta manera, se puede corroborar que tiene sentido ajustar un modelo poisson cero inflado.
+
+De igual forma, realizamos una comparación mediante una simulación con los valores reales de la base para las covariables, realizada tanto con el modelo cero inflado como con un modelo de regresión Poisson simple. Obteniendo el resultado observado en la siguiente gráfica.
+
+*Gráfica*
+
+*Mañana me avisas, Pablo, si esta interpretación de la gráfica me tocaba a mí. Es que tú fuiste quien la explicó en la expo, y no sé si ya tengas algo planeado para esta parte.*
+
+
+
+## Estimación de parámetros desde el enfoque bayesiano
+
+Ahora, considerando un ajuste desde el enfoque Bayesiano, se obtuvo la estimación de los siguientes parámetros de un modelo Poisson compuesto cero inflado. 
+
+## JAGS
+
+```{r Codigo en JAGS, eval=FALSE, include=FALSE}
+#### JAGS ######
+data <- list(                      # Cargamos los datos
+  y = CData_CDMX2_sin7$Vic_Rob_As,
+  X1 = CData_CDMX2_sin7$Edad,
+  X2 = CData_CDMX2_sin7$Mas_Pat_Vil,
+  X3 = as.numeric(CData_CDMX2_sin7$Region),
+  X4 = as.numeric(CData_CDMX2_sin7$Sit_Lab),
+  X5 = CData_CDMX2_sin7$Seg_Mun,
+  n =length(CData_CDMX2_sin7$Vic_Rob_As)
+)
+
+param <- c("alpha0", "alpha1", "alpha2", "alpha3", "alpha4", "beta0", "beta1", "beta2", "mzdp") #Parametros que queremos estimar
+inits <-  list(.RNG.name = "base::Wichmann-Hill", .RNG.seed =1 #Fijamos una semilla o damos valores iniciales
+  # "alpha0" = rnorm(1),
+  # "alpha1" = rnorm(1),
+  # "beta0" = rnorm(1),
+  # "alpha2" = c(NA, rnorm(1)),
+  # "alpha3" = c(NA, rnorm(1), rnorm(1), rnorm(1)),
+  # "alpha4" = c(NA, rnorm(1), rnorm(1)),
+  # "beta1" = c(NA, rnorm(1)),
+  # "beta2" = c(NA, rnorm(1), rnorm(1), rnorm(1))
+  
+)
+
+
+#### Otra forma de poner el p[i] de JAGS 
+
+# p[i] <- 1/(1.00001 + exp(-(alpha0 + alpha1*X1[i] + alpha2[X2[i]] + alpha3[X3[i]] + alpha4[X4[i]])))
+
+modelo = "model{
+for(i in 1:n){
+
+y[i] ~ dpois(mu[i])
+mu[i] <- u[i]*lambda[i] + 0.00001
+u[i] ~ dbern(p[i])
+
+logit(p[i]) <- alpha0 + alpha1*X1[i] + alpha2[X2[i]] + alpha3[X3[i]] + alpha4[X4[i]]
+
+log(lambda[i]) <- beta0 + beta1[X5[i]] + beta2[X3[i]]
+
+zdp[i] <- (1 - p[i]) + p[i]*exp(-lambda[i])}
+
+mzdp <- mean(zdp[])
+
+#### Priors
+
+alpha0 ~ dnorm(0.0, 0.001)
+beta0 ~ dnorm(0.0, 0.001)
+
+alpha1 ~ dnorm(0.0, 0.001)
+
+alpha2[1] <- 0
+alpha2[2] ~ dnorm(0.0, 0.001)
+
+alpha3[1] <- 0
+alpha3[2] ~ dnorm(0.0, 0.001)
+alpha3[3] ~ dnorm(0.0, 0.001)
+alpha3[4] ~ dnorm(0.0, 0.001)
+
+alpha4[1] <- 0
+alpha4[2] ~ dnorm(0.0, 0.001)
+alpha4[3] ~ dnorm(0.0, 0.001)
+
+beta1[1] <- 0
+beta1[2] ~ dnorm(0.0, 0.001)
+
+beta2[1] <- 0
+beta2[2] ~ dnorm(0.0, 0.001)
+beta2[3] ~ dnorm(0.0, 0.001)
+beta2[4] ~ dnorm(0.0, 0.001)
+
+}
+"
+
+fit <- jags.model(textConnection(modelo), data, inits, n.chains = 3)
+update(fit, 5000)
+
+sample <- coda.samples(fit, param, n.iter = 5000, thin = 2)
+```
+
+
+```{r parametros estimados}
+load(file = "Sample_conv_chida_JAGS.Rda")
+
+ssample_sem1 <- summary(sample_sem1)
+
+variables.p <- c("Intercepto", "Edad", "Mas_Pat_Vil_2", "Region_Sur", 
+               "Region_Norte", "Region_Oriente", "Sit_Lab_Sin_Oc",      "Sit_Lab_Sin_Dom")
+variables.l <-  c("Intercepto", "Seg_Mun_2", "Region_Sur", 
+               "Region_Norte", "Region_Oriente")
+
+valores.p <- c(ssample_sem1$statistics[1,1], ssample_sem1$statistics[2,1],  ssample_sem1$statistics[4,1], ssample_sem1$statistics[6,1], ssample_sem1$statistics[7,1], ssample_sem1$statistics[8,1], ssample_sem1$statistics[10,1], ssample_sem1$statistics[11,1])
+valores.l <- c(ssample_sem1$statistics[12,1], ssample_sem1$statistics[14,1], ssample_sem1$statistics[16,1], ssample_sem1$statistics[17,1], ssample_sem1$statistics[18,1])
+
+tibble(Variables = variables.p, "Bayes" = valores.p, "Clásico" = mod_ZIPsin7$coefficients$zero) %>% 
+  kable(caption = "Coeficientes estimados del modelo poisson inflado para la parte Logit utilizando JAGS vs el enofoque clásico", digits = 4, booktabs = T)
+
+tibble(Variables = variables.l,  "Bayes" = valores.l, "Clásico" = mod_ZIPsin7$coefficients$count) %>% 
+  kable(caption = "Coeficientes estimados del modelo poisson inflado para la parte poisson utilizando JAGS vs el enofoque clásico", digits = 4, booktabs = T)
+
+```
+Se puede observar que en general, las estimaciones son bastantes similares al enfoque frecuentista. No obstante, los signos para la parte relacionada al modelo logit considera los opuestos al modelo clásico, esto se debe a la implementación para calcular dichos estimadores tanto en el frecuentista como en el bayesiano; mientras uno se basa en sacar la probabilidad de cero, el otro se basa en sacar la de 1.  Sin embargo, en la literatura esto se ignora para el caso de la interpretación de los estimadores (e.g., Atkins & Gallop, 2007; Ravert,
+Schwartz, Zamboanga, Kim, Weisskirch & Bersamin, 2009; Lewis et al., 2010). Por lo que se basó en la interpretación del modelo frecuentista.
+
+Por otro lado, es importante ver que nuestros parámetros estimados desde enfoque bayesiano tengan estimaciones adecuadas. Para lograr esto, se puede acudir a la visualización de gráficas que indiquen si las cadenas de markov subyacentes convergen a las distribuciones posteriores de los parámetros. A continuación, se muestran dichas gráficas.
+
+Nota: En el caso presentado, se utilizaron dos cadenas distintas, ya que el rendimiento computacional era mucho más grande a partir de la tercer cadena. 
+
+```{r graficas param, figures-side3, fig.show='hold', out.width="25%", fig.cap= 'Distribuciones posteriores de parámetros'}
+
+par(mfrow=c(2,3))
+plot(sample_sem1[,1])
+mtext("Intercepto",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,2])
+mtext("Edad",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,4])
+mtext("Mas_Pat_Vil_2",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,6])
+mtext("Region_Sur",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,7])
+mtext("Region_Norte",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,8])
+mtext("Region_Oriente",side = 3,line = - 2, outer = TRUE)
+```
+
+
+```{r Graficas JAGS2, figures-side4, fig.show='hold', out.width="25%", fig.cap= 'Distribuciones posteriores de parámetros'}
+par(mfrow=c(3,2))
+plot(sample_sem1[,10])
+mtext("Sit_Lab_Sin_Oc",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,11])
+mtext("Sit_Lab_Sin_Dom",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,12])
+mtext("Intercepto",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,14])
+mtext("Seg_Mun_2",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,16])
+mtext("Region_Sur",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,17])
+mtext("Region_Norte",side = 3,line = - 2, outer = TRUE)
+plot(sample_sem1[,18])
+mtext("Region_Oriente",side = 3,line = - 2, outer = TRUE)
+```
+
+A través del software estadístico de JAGS, se pudó lograr obtener las distribuciones posteriores de los parámetros para el modelo Poisson Inflado; y vemos que efectivamente en casi en todos los casos se llega a la convergencia. Además, se verifico que la mayoría de nuestros estimadores fueran significativos, por lo cual podemos tener parámetros bien ajustado.
+
+## Diferencias entre el enofoque Bayesiano y el clásico
+
+Para esta parte, se generaron simulaciones del modelo bayesiano para ver que tan bien se ajustaban estos datos a los reales y se obtuvieron los siguientes resultados:
+
+
+*Gráfica modelo Bayesiano vs Frecuentista*
+
+Se puede apreciar, por un lado, que existe una mejoría en cuanto a la eficiencia del modelo por .4%. Es decir, en las simulaciones coincidido un mayor porcentaje con respecto a los datos reales. Sin embargo, también se puede ver que el modelo frecuentista gana en acercarse a la media de los datos y se ajusta mejor para las primeras categorías del histograma. 
+
+En resumen, a pesar de las diferencias entre un modelo y otro, es importante reconocer el buen ajuste del modelo bayesiano y su proximidad al modelo frecuentista. Además, estamos considerando distribuciones aprioris no informativas acerca de los datos, y ya que el enfoque bayesiano otorga una mayor flexibilidad al recabar más información, se pueden inducir nuevas estimaciones que se puedan ajustar mejor a los datos.
+
+También, es importante destacar que existe poca literatura que trata el caso específico del modelo Poisson Inflado y este asunto se agrava aún más si se intenta implementar mediante el enfoque bayesiano.
+
+
+# Conclusiones
+
+En conclusión, para el caso de nuestro estudio, se tienen dos modelos que pueden ayudar a modelar el comportamiento de estos delitos y, de igual manera, de los factores que puedan influir en la ocurrencia de los mismos. 
+
+Esta información puede apoyar al desarrollo de políticas públicas y acciones que mejoren la seguridad. Por ejemplo, dar mayor atención a aquellas áreas propensas a este tipo de crímenes, ver si realmente existe alguna relación entre el número de patrullas y la percepción de la seguridad o, simplemente, identificar a la población más vulnerable. Así, poder tener más herramientas para entender este fenómeno y atenderlo de una manera informada y oportuna. 
+
+
+
+

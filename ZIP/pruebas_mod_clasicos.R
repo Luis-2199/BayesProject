@@ -1,6 +1,6 @@
 ####### Identificar variables significativas con modelo poisson est. clasica
 
-library(rsample) # Para Cross Validation
+library(rsample) 
 
 
 

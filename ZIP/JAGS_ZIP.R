@@ -18,7 +18,7 @@ summary(mod_dist_4)
 ####### Base sin 7s ########
 CData_CDMX2_sin7 <- CData_CDMX2 %>% filter(Vic_Rob_As < 7)
 
-CData_CDMX2_sin7_resample <- sample_n(CData_CDMX2_sin7, 5419)
+CData_CDMX2_sin7_resample <- sample_n(CData_CDMX2_sin7, 5417)
 
 # Ajustamos modelo
 mod_ZIPsin7 <- zeroinfl(Vic_Rob_As ~ Seg_Mun  + Region |
@@ -29,19 +29,17 @@ summary(mod_ZIPsin7)
 
 
 #### JAGS ######
-attach(CData_CDMX2_sin7)
-
-data <- list(
-  y = Vic_Rob_As,
-  X1 = Edad,
-  X2 = Mas_Pat_Vil,
-  X3 = as.numeric(Region),
-  X4 = as.numeric(Sit_Lab),
-  X5 = Seg_Mun,
-  n =length(Vic_Rob_As)
+data <- list(                      # Cargamos los datos
+  y = CData_CDMX2_sin7$Vic_Rob_As,
+  X1 = CData_CDMX2_sin7$Edad,
+  X2 = CData_CDMX2_sin7$Mas_Pat_Vil,
+  X3 = as.numeric(CData_CDMX2_sin7$Region),
+  X4 = as.numeric(CData_CDMX2_sin7$Sit_Lab),
+  X5 = CData_CDMX2_sin7$Seg_Mun,
+  n =length(CData_CDMX2_sin7$Vic_Rob_As)
 )
 
-param <- c("alpha0", "alpha1", "alpha2", "alpha3", "alpha4", "beta0", "beta1", "beta2")
+param <- c("alpha0", "alpha1", "alpha2", "alpha3", "alpha4", "beta0", "beta1", "beta2", "mzdp")
 inits <-  list(.RNG.name = "base::Wichmann-Hill", .RNG.seed =1
   # "alpha0" = rnorm(1),
   # "alpha1" = rnorm(1),
@@ -73,6 +71,7 @@ logit(p[i]) <- alpha0 + alpha1*X1[i] + alpha2[X2[i]] + alpha3[X3[i]] + alpha4[X4
 log(lambda[i]) <- beta0 + beta1[X5[i]] + beta2[X3[i]]
 
 zdp[i] <- (1 - p[i]) + p[i]*exp(-lambda[i])}
+
 mzdp <- mean(zdp[])
 
 #### Priors
@@ -106,12 +105,12 @@ beta2[4] ~ dnorm(0.0, 0.001)
 "
 
 fit <- jags.model(textConnection(modelo), data, inits, n.chains = 3)
-update(fit, 10000)
+update(fit, 5000)
 
 sample <- coda.samples(fit, param, n.iter = 5000, thin = 2)
 
-plot(sample[,18])
-gelman.plot(sample[,1])
+plot(sample)
+gelman.plot(sample[,18])
 summary(sample)
 
 #  Simulación 1
@@ -120,7 +119,7 @@ sample_sem1 <- sample_sem1
 
 plot(sample_sem1)
 summary(sample_sem1)
-gelman.plot(sample_sem1[,1])
+gelman.plot(sample_sem1[,2])
 gelman.diag(sample_sem1[,1])
 traceplot(sample_sem1)
 

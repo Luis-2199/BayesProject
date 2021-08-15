@@ -47,10 +47,10 @@ vuong(mod_ZIPsin7, mod_PoiSin7) # Si es mejor aplicar un Poisson inflado
     sim_ZIP[i] <- rzipois(1, lambda = lambda[i], pstr0 = p[i])
   }
   
-  ####### Simulacion Poisson
+  ####### Simulacion Reg Poisson
   mu <- exp(predict(mod_PoiSin7))
-    sim_Poi <- rep(0, times = N)
-    for(i in 1:N){
+  sim_Poi <- rep(0, times = N)
+  for(i in 1:N){
       sim_Poi[i] <- rpois(1, lambda = mu[i])
   }
   
@@ -81,13 +81,17 @@ ggplot(tib_completa, aes(x=value, y=count_real)) +
 ############ Pruebas simulaciones (media y mat de confusion)
 sim_conf_mat_zeroinfl2(mod_ZIPsin7, res = CData_CDMX2_sin7$Vic_Rob_As,
                        muest.size = length(CData_CDMX2_sin7$Vic_Rob_As))
-# 68.42034% de efectividad
+                                                      # 68.42034% de efectividad
 
 sim_media_zeroinfl(mod_ZIPsin7,
                    muest.size = length(CData_CDMX2_sin7$Vic_Rob_As))   # 0.2409083
 mean(CData_CDMX2_sin7$Vic_Rob_As)                                      # 0.2538305
 
 
+########### Pruebas RegPoi sola
+sim_conf_mat_poi(mod_PoiSin7, res = CData_CDMX2_sin7$Vic_Rob_As,
+                 muest.size = length(CData_CDMX2_sin7$Vic_Rob_As))
+                                                      # 68.21968% de efectividad
 
 
 ################## Modelo sin Reg NO GANA ######################################
